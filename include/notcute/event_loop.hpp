@@ -5,7 +5,7 @@
 #include <any>
 #include <cstdint>
 
-namespace ncqt {
+namespace notcute {
 
 
 class Widget;

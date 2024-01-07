@@ -8,7 +8,7 @@
 
 #include <cstdarg>
 
-namespace ncqt {
+namespace notcute {
 
 
 inline static auto& logger() {

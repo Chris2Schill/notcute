@@ -4,7 +4,7 @@
 #include "widget.hpp"
 #include "logger.hpp"
 
-namespace ncqt {
+namespace notcute {
 
 class TextWidget : public Widget {
 public:

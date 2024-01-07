@@ -1,11 +1,11 @@
-#include <ncqt/widget.hpp>
+#include <notcute/widget.hpp>
 
-#include <ncqt/renderer.hpp>
-#include <ncqt/layout.hpp>
-#include <ncqt/event_loop.hpp>
-#include <ncqt/logger.hpp>
+#include <notcute/renderer.hpp>
+#include <notcute/layout.hpp>
+#include <notcute/event_loop.hpp>
+#include <notcute/logger.hpp>
 
-namespace ncqt {
+namespace notcute {
 
 std::unordered_map<ncpp::Plane*, std::string> Widget::plane_name_map;
 

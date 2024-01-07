@@ -8,7 +8,7 @@
 #include "logger.hpp"
 #include "event_loop.hpp"
 
-namespace ncqt {
+namespace notcute {
 
 class Layout;
 class LayoutItem;

@@ -8,7 +8,7 @@
 #include "renderer.hpp"
 #include "text_widget.hpp"
 
-namespace ncqt {
+namespace notcute {
 
 inline Widget* create_widget_row(Widget* p) {
 

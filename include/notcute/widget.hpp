@@ -3,7 +3,7 @@
 #include "object.hpp"
 #include "rect.hpp"
 
-namespace ncqt {
+namespace notcute {
 
 class Layout;
 class Event;

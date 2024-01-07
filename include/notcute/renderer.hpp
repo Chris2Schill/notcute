@@ -5,7 +5,7 @@
 #include <ncpp/Pile.hh>
 #include "widget.hpp"
 
-namespace ncqt {
+namespace notcute {
 
 struct Renderer {
     static ncplane_options* default_pile_options() {

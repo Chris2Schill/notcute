@@ -2,7 +2,7 @@
 
 #include <ncpp/NotCurses.hh>
 
-namespace ncqt {
+namespace notcute {
 
 class Object : public ncpp::Root {
     
