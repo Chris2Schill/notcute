@@ -21,6 +21,7 @@ find_package(spdlog REQUIRED)
 
 set(SOURCES
     src/widget.cpp
+    src/layout2.cpp
 )
 
 add_library(notcute STATIC ${SOURCES})
@@ -28,5 +29,8 @@ target_link_libraries(notcute PUBLIC notcurses++ notcurses notcurses-core spdlog
 target_link_directories(notcute PUBLIC /usr/local/lib)
 target_include_directories(notcute PUBLIC include)
 
-add_executable(layout_test src/layout_test.cpp)
-target_link_libraries(layout_test PRIVATE notcute)
+# add_executable(layout_test src/layout_test.cpp)
+# target_link_libraries(layout_test PRIVATE notcute)
+
+add_executable(layout2_test src/layout2_test.cpp)
+target_link_libraries(layout2_test PRIVATE notcute)

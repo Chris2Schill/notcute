@@ -25,11 +25,9 @@ public:
     };
 
 
-
     void add_widget(Widget* widget) override {
         widget->reparent(get_parent_widget());
         items.push_back(new WidgetItem(widget));
-
 
         invalidate();
     }
@@ -42,47 +40,33 @@ public:
             return;
         }
 
-        int left, top, right, bottom;
-        get_content_margins(&left, &top, &right, &bottom);
-
-        auto widget_height = (rect.height()-top-bottom) / items.size();
-        // Rect w_rect = widget->get_geometry();
-        // w_rect.set_height(widget_height);
-        // widget->set_geometry(rect);
-
-        // for (auto item : get_items()) {
-        //     Widget* w = item->get_widget();
-        //     if (w) {
-        //         Rect r = rect;
-        //         // r.set_left(r.left() + left);
-        //         // r.set_right(r.right() - right);
-        //         // r.set_top(r.top() + top);
-        //         // r.set_bottom(r.bottom() - bottom);
-        //         r.m_pos.x += 1;
-        //         // r.set_height(r.height() - top - bottom);
-        //         // r.set_width(r.height() - top - bottom);
-        //         r.set_height(widget_height);
-        //
-        //         w->set_geometry(r);
-        //         // if (auto l = get_layout(); l) ,
-        //         //     l->set_geometry(r);
-        //         // }
-        //     }
-        // }
-
-
         do_layout(rect);
     }
 
     void invalidate() override {
         set_dirty();
-        Layout::invalidate();
+        // Layout::invalidate();
+
+        set_geometry(get_geometry());
+        // resize_children();
     }
+
+    // void resize_children() {
+    // }
 
     void add_layout(Layout* layout) override {
         set_dirty();
         items.push_back(layout);
         Layout::invalidate();
+    }
+
+    Point map_to_parent(Point pos) {
+        if (Widget* p = dynamic_cast<Widget*>(get_parent_widget()); p) {
+            Rect rect = p->get_geometry();
+            pos.x -= rect.x();
+            pos.y -= rect.y();
+        }
+        return pos;
     }
 
     void do_layout(const Rect& rect) {
@@ -97,28 +81,42 @@ public:
 
         auto widget_height = (rect.height()-top-bottom) / items.size();
 
-        if (get_alignment() & Center) {
-            next_x = next_x + rect.width()/2;
-        }
+
+        // if (auto pw = get_parent_widget(); pw) {
+        //     if (pw->get_name() == "row1") {
+        //         log_debug(fmt::format("row1 container = {}", rect.to_string()));
+        //     }
+        // }
+        // if (get_alignment() & Center) {
+        //     next_x = next_x + rect.width()/2;
+        // }
+
+        
 
         for (auto item : get_items()) {
             int xoffset = 0;
-            if (get_alignment() & Center) {
-                xoffset = -(item->get_geometry().width()/2);
-            }
+            // if (get_alignment() & Center) {
+            //     xoffset = -(item->get_geometry().width()/2);
+            // }
 
-            Rect rect = Rect{Point{next_x+xoffset, next_y}, item->size()};
-            rect.set_left(rect.left() + left);
-            rect.set_top(rect.top() + top);
-            rect.set_height(widget_height);
-            rect.set_width(rect.width()-left-right);
-            item->set_geometry(rect);
+            Widget* w = item->get_widget();
+
+            Rect wrect = Rect{Point{next_x+xoffset, next_y}, item->size()};
+            wrect.set_left(wrect.left() + left);
+            wrect.set_top(wrect.top() + top);
+            wrect.set_height(widget_height);
+            wrect.set_width(rect.width()-left-right);
+
+            log_debug(fmt::format("{} SIZER {}", w->get_name(), wrect.to_string()));
+
+            wrect.m_pos = map_to_parent(wrect.pos());
+            item->set_geometry(wrect);
             next_y += item->get_geometry().height();
         }
     }
 
 private:
-    LayoutDirection layout_direction = TOP_TO_BOTTOM;
+    LayoutDirection layout_direction = LEFT_TO_RIGHT;
 
 };
 

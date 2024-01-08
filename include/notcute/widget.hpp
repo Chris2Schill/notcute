@@ -19,8 +19,36 @@ public:
 
     virtual void draw(ncpp::Plane* plane) {
         plane->erase();
+        if (!fill_char.empty()) {
+
+            log_debug(fmt::format("{} DRAW {}", get_name(), get_geometry().to_string()));
+
+            fill(fill_char);
+            draw_children();
+            return;
+        }
         draw_border();
         plane->putstr(0,0,get_name().c_str());
+        draw_children();
+
+    }
+
+    void draw_children();
+
+    std::string fill_char = "";
+
+    void set_fill(std::string c) {
+        fill_char = c;
+    }
+
+    void fill(std::string c) {
+        plane->erase();
+        Rect rect = get_geometry();
+        for (int i = 0; i < rect.height(); i++) {
+            for (int j = 0; j < rect.width(); j++) {
+                plane->putstr(i, j, c.c_str());
+            }
+        }
     }
 
     void reparent(Widget* new_parent) {

@@ -7,6 +7,8 @@
 #include <notcute/box_layout.hpp>
 #include <notcute/renderer.hpp>
 #include <notcute/text_widget.hpp>
+#define LAY_IMPLEMENTATION
+#include <notcute/layout2.hpp>
 
 namespace notcute {
 
@@ -22,25 +24,25 @@ inline Widget* create_widget_row(Widget* p) {
     // p->get_layout()->add_widget(w);
 
     w->set_layout(l);
-    static bool first = true;
-    if (first) {
-        first = false;
-        for (int i = 0; i < 1; ++i) {
-
-            auto tw = new TextWidget("AAAAAAAAAAAAAAAAAAA|", w);
-            tw->set_name("text_widget");
-            w->get_layout()->add_widget(tw);
-        }
-    }
-    else
-    {
-        for (int i = 0; i < 1; ++i) {
-
-            auto tw = new TextWidget("BBBBBBBBBBBBBBBBBB|", w);
-            tw->set_name("text_widget");
-            w->get_layout()->add_widget(tw);
-        }
-    }
+    // static bool first = true;
+    // if (first) {
+    //     first = false;
+    //     for (int i = 0; i < 1; ++i) {
+    //
+    //         auto tw = new TextWidget("AAAAAAAAAAAAAAAAAAA|", w);
+    //         tw->set_name("text_widget");
+    //         w->get_layout()->add_widget(tw);
+    //     }
+    // }
+    // else
+    // {
+    //     for (int i = 0; i < 1; ++i) {
+    //
+    //         auto tw = new TextWidget("BBBBBBBBBBBBBBBBBB|", w);
+    //         tw->set_name("text_widget");
+    //         w->get_layout()->add_widget(tw);
+    //     }
+    // }
     // auto rect = w->get_geometry();
     // rect.m_size.height = 72/2;
     // w->set_geometry(rect);
@@ -113,15 +115,46 @@ inline void run_layout_test2() {
 
     Widget* main_window = new Widget();
     main_window->set_name("layout_test2");
+    // main_window->set_fill("1");
 
     main_window->set_layout(new BoxLayout(main_window));
     main_window->get_layout()->debug_name = "v1";
 
     auto row1 = create_widget_row(main_window);
     row1->get_layout()->debug_name = "v2.1";
+    row1->set_name("row1");
+    // row1->set_fill("2");
 
     auto row2 = create_widget_row(main_window);
     row2->get_layout()->debug_name = "v2.2";
+    // row2->set_fill("3");
+
+    Widget* row1_1 = new Widget();
+    row1_1->set_layout(new BoxLayout);
+    row1_1->set_name("row1_1");
+    // row1_1->set_fill("4");
+    row1->get_layout()->add_widget(row1_1);
+
+
+    Widget* row1_2 = new Widget();
+    row1_2->set_layout(new BoxLayout);
+    row1_2->set_name("row1_2");
+    // row1_2->set_fill("5");
+    row1->get_layout()->add_widget(row1_2);
+
+    Widget* row1_1_1 = new Widget();
+    row1_1_1->set_layout(new BoxLayout);
+    row1_1_1->set_name("row1_1_1");
+    // row1_2->set_fill("5");
+    row1_1->get_layout()->add_widget(row1_1_1);
+    // row1_1->set_fill("1");
+
+    // Widget* row2_1 = new Widget(row1);
+    // row2_1->set_layout(new BoxLayout);
+    // row2_1->set_name("row2_1");
+
+
+    // row2->get_layout()->add_widget(row2_1);
 
     main_window->get_layout()->add_widget(row1);
     main_window->get_layout()->add_widget(row2);
@@ -158,6 +191,19 @@ inline void run_layout_test2() {
     renderer->get_nc()->get(true);
 }
 
+
+void fill_test() {
+    Renderer* renderer = Renderer::get_instance();
+
+    Widget* main_window = new Widget();
+    main_window->set_name("fill_test");
+
+    main_window->set_layout(new BoxLayout(main_window));
+    main_window->get_layout()->debug_name = "v1";
+
+    main_window->set_fill("z");
+    main_window->show();
+}
 
 }
 

@@ -1,7 +1,7 @@
 #include <notcute/widget.hpp>
 
 #include <notcute/renderer.hpp>
-#include <notcute/layout.hpp>
+#include <notcute/layout2.hpp>
 #include <notcute/event_loop.hpp>
 #include <notcute/logger.hpp>
 
@@ -29,7 +29,7 @@ Widget::Widget(Widget* parent)
         ncpp::Pile* pile = Renderer::get_instance()->create_pile_for_widget(this);
         plane->reparent(pile);
     }
-    EventLoop::get_instance()->post(new DrawEvent(this));
+    // EventLoop::get_instance()->post(new DrawEvent(this));
 
     // }
 
@@ -41,9 +41,12 @@ Widget::Widget(Widget* parent)
 
 void Widget::set_layout(Layout* layout) {
     this->layout = layout;
+    // set_geometry(layout->get_geometry());
+
     layout->set_parent_widget(this);
-    layout->invalidate();
+    // layout->invalidate();
 }
+
 Layout* Widget::get_layout() const { return layout; }
 
 void Widget::set_geometry(const Rect& rect) {
@@ -54,13 +57,18 @@ void Widget::set_geometry(const Rect& rect) {
     // else {
     //     log_debug(fmt::format("null layout Resizing widget: {}", rect.to_string()));
     // }
-    // if (Layout* l = get_layout(); l) {
-    //     l->invalidate();
-    // }
+    if (Layout* l = get_layout(); l) {
+        // l->invalidate();
+        l->set_geometry(rect);
+    }
+
+    
     log_debug(fmt::format("{} moved to ({},{})", get_name(), rect.y(), rect.x()));
     plane->resize(rect.height(), rect.width());
     plane->move(rect.y(), rect.x());
     plane->resize_realign();
+
+    // EventLoop::get_instance()->post(new DrawEvent(this));
 }
 
 void Widget::on_event(Event* e) {
@@ -73,6 +81,17 @@ void Widget::on_event(Event* e) {
     }
 }
 
+void Widget::draw_children() {
+    log_debug(fmt::format("{} draw_children", get_name()));
+    if (Layout* layout = get_layout(); layout) {
+        for (LayoutItem* item : layout->get_children()) {
+            if (Widget* w = item->get_widget(); w) {
+                w->draw(w->get_plane());
+            }
+        }
+    }
+}
+
 void Widget::on_draw_event(DrawEvent* e) {
     if (e->get_sender() == this) {
         this->draw(plane);
@@ -81,6 +100,7 @@ void Widget::on_draw_event(DrawEvent* e) {
 
 void Widget::show() {
 
+    EventLoop::get_instance()->post(new DrawEvent(this));
     is_showing = true;
     while(is_showing) {
         Renderer::get_instance()->show(this);
