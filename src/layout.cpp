@@ -1,6 +1,6 @@
 
 #define LAY_IMPLEMENTATION
-#include <notcute/layout2.hpp>
+#include <notcute/layout.hpp>
 
 namespace notcute {
 
@@ -10,6 +10,7 @@ lay_context* get_layout_context() {
     if (first) {
         first = false;
         lay_init_context(&ctx);
+        lay_reserve_items_capacity(&ctx, 1024);
     }
     return &ctx;
 }

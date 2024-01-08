@@ -14,9 +14,15 @@ class Widget : public Object {
 public:
     Widget(Widget* parent = nullptr);
 
-    void    set_layout(Layout* layout);
+    void    set_layout(Box* layout);
     Layout* get_layout() const;
     void    show();
+
+    void draw() {
+        pre_draw(plane);
+        draw(plane);
+        post_draw(plane);
+    }
 
     virtual void pre_draw(ncpp::Plane* plane) {
         plane->erase();
@@ -28,14 +34,11 @@ public:
         //     draw_children();
         //     return;
         // }
-        draw(plane);
-        plane->putstr(0,0,get_name().c_str());
-    }
-
-    void draw() {
-        pre_draw(plane);
-        draw(plane);
-        post_draw(plane);
+        box->run_context();
+        Rect rect = box->get_rect();
+        plane->resize(rect.height(), rect.width());
+        plane->move(rect.y(), rect.x());
+        plane->resize_realign();
     }
 
     virtual void draw(ncpp::Plane* plane) {
@@ -95,7 +98,9 @@ public:
 
     ncpp::Plane* get_plane() { return plane; }
 
-    // void set_geometry(const Rect& rect);
+    Box* get_layout() { return box; }
+
+    void set_geometry(const Rect& rect);
     //
     // void draw_border() {
     //     plane->perimeter_rounded(0,0,0);

@@ -1,213 +1,135 @@
-#pragma once
+// LAY_IMPLEMENTATION needs to be defined in exactly one .c or .cpp file that
+// includes layout.h. All other files should not define it.
 
-#include <fcntl.h>
-#include <ncpp/NotCurses.hh>
-#include <ncpp/Pile.hh>
-
-#include <notcute/box_layout.hpp>
+#include <notcute/layout.hpp>
 #include <notcute/renderer.hpp>
-#include <notcute/text_widget.hpp>
-#define LAY_IMPLEMENTATION
-#include <notcute/layout2.hpp>
+#include <notcute/box.hpp>
+#include <notcute/logger.hpp>
+#include <iostream>
 
-namespace notcute {
+using namespace notcute;
 
-inline Widget* create_widget_row(Widget* p) {
+void print(std::string name, Rect rect) {
+    log_debug(fmt::format("{} = Pos=({},{}),Size=({},{})", name, rect.x(), rect.y(), rect.width(), rect.height()));
+};
 
-    Renderer* renderer = Renderer::get_instance();
 
-    auto l = new BoxLayout();
-
-    Widget* w = new Widget(p);
-    w->set_name("row widget container");
-    // w->reparent(p);
-    // p->get_layout()->add_widget(w);
-
-    w->set_layout(l);
-    // static bool first = true;
-    // if (first) {
-    //     first = false;
-    //     for (int i = 0; i < 1; ++i) {
-    //
-    //         auto tw = new TextWidget("AAAAAAAAAAAAAAAAAAA|", w);
-    //         tw->set_name("text_widget");
-    //         w->get_layout()->add_widget(tw);
-    //     }
-    // }
-    // else
-    // {
-    //     for (int i = 0; i < 1; ++i) {
-    //
-    //         auto tw = new TextWidget("BBBBBBBBBBBBBBBBBB|", w);
-    //         tw->set_name("text_widget");
-    //         w->get_layout()->add_widget(tw);
-    //     }
-    // }
-    // auto rect = w->get_geometry();
-    // rect.m_size.height = 72/2;
-    // w->set_geometry(rect);
-    // w->get_layout()->set_geometry(
-    //         Rect{w->get_layout()->get_geometry().pos(),
-    //         Size{3,4}});
-
-    // log_debug(fmt::format("            {}.Geo={}",
-    //     w->get_name(),
-    //     w->get_contents_rect().to_string()
-    // ));
-    // w->get_layout()->set_alignment(Center);
-    return w;
+ncpp::Plane* from_box(Box* box) {
+    Rect r = box->get_rect();
+    return new ncpp::Plane(r.height(), r.width(), r.y(), r.x());
 }
 
+void fill(ncpp::Plane* plane, std::string c) {
+    plane->erase();
 
-inline Widget* create_blank_widget() {
-    Widget* w = new Widget;
-    w->set_layout(new BoxLayout);
-    return  w;
+    Rect rect {
+        Point{
+            .x = plane->get_x(),
+            .y = plane->get_y(),
+        },
+        Size {
+            .width = plane->get_dim_x(),
+            .height = plane->get_dim_y(),
+        }
+    };
+
+    for (int i = 0; i < rect.height(); i++) {
+        for (int j = 0; j < rect.width(); j++) {
+            plane->putstr(i, j, c.c_str());
+        }
+    }
 }
 
-inline void run_layout_test() {
+void draw(Box* b, ncpp::Plane* p, const std::string& c) {
+    Rect r = b->get_rect();
+    p->resize(r.height(), r.width());
+    p->move(r.y(), r.x());
 
-    Renderer* renderer = Renderer::get_instance();
-
-    Widget* main_window = new Widget();
-    main_window->set_name("main window");
-
-    main_window->set_layout(new BoxLayout(main_window));
-    main_window->get_layout()->debug_name = "v1";
-
-    Widget* b1 = create_blank_widget();
-    b1->set_name("b1");
-    b1->get_layout()->debug_name = "b1layout";
-    main_window->get_layout()->add_widget(b1);
-
-    Widget* b2 = create_blank_widget();
-    b2->set_name("b2");
-    b2->get_layout()->debug_name = "b2layout";
-    main_window->get_layout()->add_widget(b2);
-
-    EventLoop::get_instance()->process_events();
-
-
-    log_debug("TEST-----------------");
-    log_debug(fmt::format("TEST{}.Geo={}",
-                           b1->get_name(),
-                           b1->get_geometry().to_string()));
-
-    log_debug(fmt::format("TEST{}.Geo={}",
-                           b1->get_layout()->debug_name,
-                           b1->get_layout()->get_geometry().to_string()));
-    log_debug("TEST-----------------");
-    log_debug(fmt::format("TEST{}.Geo={}",
-                           b2->get_name(),
-                           b2->get_geometry().to_string()));
-
-    log_debug(fmt::format("TEST{}.Geo={}",
-                           b2->get_layout()->debug_name,
-                           b2->get_layout()->get_geometry().to_string()));
-
-    main_window->show();
-    renderer->get_nc()->get(true);
-}
-
-inline void run_layout_test2() {
-
-    Renderer* renderer = Renderer::get_instance();
-
-    Widget* main_window = new Widget();
-    main_window->set_name("layout_test2");
-    // main_window->set_fill("1");
-
-    main_window->set_layout(new BoxLayout(main_window));
-    main_window->get_layout()->debug_name = "v1";
-
-    auto row1 = create_widget_row(main_window);
-    row1->get_layout()->debug_name = "v2.1";
-    row1->set_name("row1");
-    // row1->set_fill("2");
-
-    auto row2 = create_widget_row(main_window);
-    row2->get_layout()->debug_name = "v2.2";
-    // row2->set_fill("3");
-
-    Widget* row1_1 = new Widget();
-    row1_1->set_layout(new BoxLayout);
-    row1_1->set_name("row1_1");
-    // row1_1->set_fill("4");
-    row1->get_layout()->add_widget(row1_1);
-
-
-    Widget* row1_2 = new Widget();
-    row1_2->set_layout(new BoxLayout);
-    row1_2->set_name("row1_2");
-    // row1_2->set_fill("5");
-    row1->get_layout()->add_widget(row1_2);
-
-    Widget* row1_1_1 = new Widget();
-    row1_1_1->set_layout(new BoxLayout);
-    row1_1_1->set_name("row1_1_1");
-    // row1_2->set_fill("5");
-    row1_1->get_layout()->add_widget(row1_1_1);
-    // row1_1->set_fill("1");
-
-    // Widget* row2_1 = new Widget(row1);
-    // row2_1->set_layout(new BoxLayout);
-    // row2_1->set_name("row2_1");
-
-
-    // row2->get_layout()->add_widget(row2_1);
-
-    main_window->get_layout()->add_widget(row1);
-    main_window->get_layout()->add_widget(row2);
-
-    log_debug(fmt::format("TEST{}.Geo={}",
-                           main_window->get_name(),
-                           main_window->get_geometry().to_string()));
-
-    log_debug(fmt::format("TEST{}.Geo={}",
-                           main_window->get_layout()->debug_name,
-                           main_window->get_layout()->get_geometry().to_string()));
-
-    // log_debug(fmt::format("{}.Geo={}",
-    //     main_window->get_layout()->get_items()[0]->get_widget()->get_name(),
-    //     main_window->get_layout()->get_items()[0]->get_widget()->get_contents_rect().to_string()
-    // ));
-    //
-    // log_debug(fmt::format("{}.Geo={}",
-    //     main_window->get_layout()->get_items()[1]->get_widget()->get_name(),
-    //     main_window->get_layout()->get_items()[1]->get_widget()->get_contents_rect().to_string()
-    // ));
-    //
-    // main_window->get_layout()->add_widget(new TextWidget("BOIIIII|", main_window));
-    // main_window->get_layout()->add_widget(new TextWidget("BOIIIII|", main_window));
-    // main_window->get_layout()->add_widget(new TextWidget("BOIIIII|", main_window));
-    // main_window->get_layout()->add_widget(new TextWidget("BOIIIII|", main_window));
-    // main_window->get_layout()->add_widget(row2);
-    // main_window->get_layout()->set_geometry(Rect{Point{0,0},renderer->get_term_size()});
-
-    // main_window->get_layout()->set_geometry(
-    //         main_window->get_layout()->get_geometry());
-
-    main_window->show();
-    renderer->get_nc()->get(true);
-}
-
-
-void fill_test() {
-    Renderer* renderer = Renderer::get_instance();
-
-    Widget* main_window = new Widget();
-    main_window->set_name("fill_test");
-
-    main_window->set_layout(new BoxLayout(main_window));
-    main_window->get_layout()->debug_name = "v1";
-
-    main_window->set_fill("z");
-    main_window->show();
-}
-
+    fill(p, c);
+    p->perimeter_double(0,0,0);
+    p->putstr(0,2,"TOPLEFTBABY");
 }
 
 int main() {
-    notcute::run_layout_test2();
+    notcute::Renderer* renderer = notcute::Renderer::get_instance();
+    Size term_size = renderer->get_term_size();
+    notcute::Widget* main_window = new Widget();
+    main_window->set_layout(new VBoxLayout(term_size.height, term_size.width));
+
+    notcute::Widget* wid1 = new Widget(main_window);
+    notcute::Widget* wid2 = new Widget(main_window);
+    wid1->set_layout(new HBoxLayout(10,10));
+    wid2->set_layout(new VBoxLayout(10,10));
+    main_window->get_layout()->add_widget(wid1);
+    main_window->get_layout()->add_widget(wid2);
+
+    notcute::Widget* wid1_1 = new Widget(wid1);
+    notcute::Widget* wid1_2 = new Widget(wid1);
+    wid1_1->set_layout(new VBoxLayout(10,30));
+    wid1_2->set_layout(new VBoxLayout(10,10));
+    wid1->get_layout()->add_widget(wid1_1);
+    wid1->get_layout()->add_widget(wid1_2);
+
+    wid1_1->get_layout()->set_behave(LAY_VFILL);
+
+    main_window->draw();
+    main_window->get_plane()->putstr(0,0,"BOOOOOOOOOOOOOOOOOOOOOOOOOO");
+    main_window->show();
+    return 0;
 }
 
+int main2() {
+    // Size term_size = renderer->get_term_size();
+
+    ncpp::NotCurses nc;
+    unsigned rows, cols;
+    nc.get_term_dim(&rows, &cols);
+    Box* root2 = new Box(rows, cols);
+    // Box* root2 = new Box(1280,800);
+    root2->set_contain(LAY_ROW);
+
+    Box* mlist = new Box(20, 60, root2);
+    Box* mcontents = new Box(1,1, root2);
+
+    Box* mlist_i1 = new Box(20, 20, mlist);
+    mlist_i1->set_behave(LAY_FILL);
+    Box* mlist_i2 = new Box(20, 20, mlist);
+    mlist_i2->set_behave(LAY_FILL);
+    Box* mlist_i3 = new Box(20, 20, mlist);
+    mlist_i3->set_behave(LAY_FILL);
+
+
+    mlist->set_behave(LAY_VCENTER | LAY_LEFT | LAY_VFILL);
+    mlist->set_contain(LAY_COLUMN);
+    //
+    // root2->insert(mcontents);
+    mcontents->set_behave(LAY_HFILL | LAY_VFILL);
+
+    root2->run_context();
+
+
+    print("root", root2->get_rect());
+    print("master list", mlist->get_rect());
+    print("contents", mcontents->get_rect());
+    // print("contents", mcontents->get_rect());
+
+
+    ncpp::Plane* mplane = from_box(mlist);
+    ncpp::Plane* cplane = from_box(mcontents);
+    ncpp::Plane* mlist_i1p = from_box(mlist_i1);
+    ncpp::Plane* mlist_i2p = from_box(mlist_i2);
+    ncpp::Plane* mlist_i3p = from_box(mlist_i3);
+
+    draw(mlist, mplane, "m");
+    draw(mcontents, cplane, "z");
+    draw(mlist_i1, mlist_i1p, "a");
+    draw(mlist_i2, mlist_i2p, "b");
+    draw(mlist_i3, mlist_i3p, "c");
+
+    while(true) {
+        nc.render();
+        std::this_thread::sleep_for(std::chrono::milliseconds(16));
+    }
+
+    return 0;
+}
