@@ -27,3 +27,6 @@ add_library(notcute STATIC ${SOURCES})
 target_link_libraries(notcute PUBLIC notcurses++ notcurses notcurses-core spdlog::spdlog)
 target_link_directories(notcute PUBLIC /usr/local/lib)
 target_include_directories(notcute PUBLIC include)
+
+add_executable(layout_test src/layout_test.cpp)
+target_link_libraries(layout_test PRIVATE notcute)

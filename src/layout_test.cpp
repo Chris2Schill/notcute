@@ -4,9 +4,9 @@
 #include <ncpp/NotCurses.hh>
 #include <ncpp/Pile.hh>
 
-#include "layout.hpp"
-#include "renderer.hpp"
-#include "text_widget.hpp"
+#include <notcute/box_layout.hpp>
+#include <notcute/renderer.hpp>
+#include <notcute/text_widget.hpp>
 
 namespace notcute {
 
@@ -14,7 +14,7 @@ inline Widget* create_widget_row(Widget* p) {
 
     Renderer* renderer = Renderer::get_instance();
 
-    auto l = new VBoxLayout();
+    auto l = new BoxLayout();
 
     Widget* w = new Widget(p);
     w->set_name("row widget container");
@@ -59,7 +59,7 @@ inline Widget* create_widget_row(Widget* p) {
 
 inline Widget* create_blank_widget() {
     Widget* w = new Widget;
-    w->set_layout(new VBoxLayout);
+    w->set_layout(new BoxLayout);
     return  w;
 }
 
@@ -70,7 +70,7 @@ inline void run_layout_test() {
     Widget* main_window = new Widget();
     main_window->set_name("main window");
 
-    main_window->set_layout(new VBoxLayout(main_window));
+    main_window->set_layout(new BoxLayout(main_window));
     main_window->get_layout()->debug_name = "v1";
 
     Widget* b1 = create_blank_widget();
@@ -112,9 +112,9 @@ inline void run_layout_test2() {
     Renderer* renderer = Renderer::get_instance();
 
     Widget* main_window = new Widget();
-    main_window->set_name("main window");
+    main_window->set_name("layout_test2");
 
-    main_window->set_layout(new VBoxLayout(main_window));
+    main_window->set_layout(new BoxLayout(main_window));
     main_window->get_layout()->debug_name = "v1";
 
     auto row1 = create_widget_row(main_window);
@@ -159,5 +159,9 @@ inline void run_layout_test2() {
 }
 
 
+}
+
+int main() {
+    notcute::run_layout_test2();
 }
 
