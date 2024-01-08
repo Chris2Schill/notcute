@@ -1,10 +1,10 @@
 // LAY_IMPLEMENTATION needs to be defined in exactly one .c or .cpp file that
 // includes layout.h. All other files should not define it.
 
-#include "notcute/layout2.h"
-#define LAY_IMPLEMENTATION
+#include <notcute/layout2.h>
 #include <notcute/layout2.hpp>
 #include <notcute/renderer.hpp>
+#include <notcute/box.hpp>
 #include <notcute/logger.hpp>
 #include <iostream>
 
@@ -19,73 +19,6 @@ void print(std::string name, Rect rect) {
     log_debug(fmt::format("{} = Pos=({},{}),Size=({},{})", name, rect.x(), rect.y(), rect.width(), rect.height()));
 };
 
-lay_context* get_context() {
-    static lay_context ctx;
-    static bool first = true;
-    if (first) {
-        first = false;
-        lay_init_context(&ctx);
-    }
-    return &ctx;
-}
-
-class Box {
-public:
-    Box(int rows, int cols, Box* parent = nullptr) : Box(parent) {
-        set_size(rows, cols);
-    }
-
-    Box(Box* parent = nullptr) {
-        ctx = get_context();
-        lay_reserve_items_capacity(ctx, 1024);
-        id = lay_item(ctx);
-
-        if (parent) {
-            lay_insert(ctx, parent->id, id);
-        }
-    }
-
-    // Box(int width, int height) {
-    //
-    //     ctx = get_context();
-    //     lay_reserve_items_capacity(ctx, 1024);
-    //     id = lay_item(ctx);
-    //     lay_set_size_xy(ctx, id, width, height);
-    // }
-
-    void set_size(int rows, int cols) {
-        lay_set_size_xy(ctx, id, cols, rows);
-    }
-
-    void set_contain(int flags) {
-        lay_set_contain(ctx, id, flags);
-    }
-
-    void set_behave(int flags) {
-        lay_set_behave(ctx, id, flags);
-    }
-
-    void insert(Box* box) {
-        lay_insert(ctx, id, box->id);
-    }
-
-    void run_context(){
-        lay_run_context(ctx);
-    }
-
-    Rect get_rect() {
-        lay_vec4 rect = lay_get_rect(ctx, id);
-        return Rect {
-            Point{rect[0],rect[1]},
-            Size{(unsigned)rect[2],(unsigned)rect[3]},
-        };
-    }
-
-    lay_id       id = {};
-    lay_context* ctx = {};
-    int          box_flags = 0;
-    int          layout_flags = 0;
-};
 
 ncpp::Plane* from_box(Box* box) {
     Rect r = box->get_rect();
@@ -125,13 +58,24 @@ void draw(Box* b, ncpp::Plane* p, const std::string& c) {
     p->putstr(0,2,"TOPLEFTBABY");
 }
 
-struct Widget {
-    Box* bounds;
-    ncpp::Plane* plane;
-};
+// struct Widget {
+//     Box* bounds;
+//     ncpp::Plane* plane;
+// };
 
 int main() {
-    // notcute::Renderer* renderer = notcute::Renderer::get_instance();
+    notcute::Renderer* renderer = notcute::Renderer::get_instance();
+    // unsigned rows, cols;
+    // nc.get_term_dim(&rows, &cols);
+    Size term_size = renderer->get_term_size();
+    notcute::Widget* main_window = new Widget();
+    main_window->draw();
+    main_window->get_plane()->putstr(0,0,"BOOOOOOOOOOOOOOOOOOOOOOOOOO");
+    main_window->show();
+    return 0;
+}
+
+int main2() {
     // Size term_size = renderer->get_term_size();
 
     ncpp::NotCurses nc;

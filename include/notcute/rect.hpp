@@ -41,6 +41,9 @@ struct Rect {
     void set_left(int x) { m_pos.x = x; }
     void set_right(int x) { m_pos.x = x-m_size.width; }
 
+    unsigned rows() const { return m_size.height; }
+    unsigned cols() const { return m_size.width; }
+
     int top() const { return y(); }
     int bottom() const { return y()+m_size.height; }
     int left() const { return x(); }
