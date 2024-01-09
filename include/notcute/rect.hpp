@@ -2,6 +2,9 @@
 
 #include "logger.hpp"
 
+namespace notcute {
+
+
 struct Point {
     int x;
     int y;
@@ -52,3 +55,5 @@ struct Rect {
     Point m_pos;
     Size m_size;
 };
+
+}

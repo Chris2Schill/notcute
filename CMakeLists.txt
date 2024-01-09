@@ -23,6 +23,7 @@ set(SOURCES
     src/widget.cpp
     src/box.cpp
     src/layout.cpp
+    src/event_loop.cpp
 )
 
 add_library(notcute STATIC ${SOURCES})

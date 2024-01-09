@@ -2,8 +2,10 @@
 
 #include <queue>
 #include <functional>
-#include <any>
 #include <cstdint>
+#include <ncpp/NotCurses.hh>
+#include "util.hpp"
+#include "rect.hpp"
 
 namespace notcute {
 
@@ -14,7 +16,9 @@ class Event {
 public:
     enum EventType {
         DRAW,
-        LAYOUT_REQUEST,
+        RESIZE,
+        KEYBOARD_EVENT,
+        MOUSE_EVENT,
     };
 
     Event(Widget* sender, EventType t)
@@ -36,6 +40,35 @@ public:
         :Event(w, EventType::DRAW)
     {
     }
+};
+
+class KeyboardEvent : public Event {
+public:
+    KeyboardEvent(Widget* w, const ncinput& ni)
+        :Event(w, EventType::KEYBOARD_EVENT)
+        ,ni(ni)
+    {
+    }
+
+    uint32_t get_key() { return ni.id; }
+    const ncinput& get_ncinput() { return ni; }
+
+private:
+    ncinput ni = {};
+};
+
+class ResizeEvent : public Event {
+public:
+    ResizeEvent(Widget* w, const Rect& r)
+        :Event(w, EventType::RESIZE)
+        , rect(r)
+    {
+    }
+
+    const Rect& get_rect() const { return rect; }
+
+private:
+    Rect rect;
 };
 
 template<typename T, typename... U>
@@ -81,19 +114,10 @@ struct Subscriber
 class EventLoop {
 public:
 
-    void process_events() {
-        while (!events.empty()) {
-            Event* e = events.front();
-            events.pop();
-            for (auto& sub : subscribers) {
-                sub.callback(e);
-            }
-            delete e;
-        }
-    }
+    void process_events();
 
     void post(Event* e) {
-        events.push(e);
+        events.write(e);
     }
 
     // template<class E, typename Callable>
@@ -115,7 +139,7 @@ public:
 
     std::vector<Subscriber<Event>> subscribers;
 
-    std::queue<Event*> events;
+    util::NonBlockingChannel<Event*> events;
 };
 
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include "layout.h"
 #include "rect.hpp"
 #include "layout.hpp"
 
@@ -21,10 +22,12 @@ public:
 class WidgetItem : public BoxItem {
 public:
     WidgetItem(Widget* w) : wid(w) {}
+    ~WidgetItem();
 
     virtual Widget* get_widget() {
         return wid;
     }
+
 private:
     Widget* wid;
 };
@@ -35,14 +38,29 @@ public:
         set_size(rows, cols);
     }
 
+    Box(int rows, int cols, Widget* parent) : Box(parent) {
+        set_size(rows, cols);
+    }
+
+    Box(Widget* parent);
+
     Box(Box* parent = nullptr) {
-        ctx = notcute::get_layout_context();
+        if (!parent) {
+            ctx =  new lay_context;
+            lay_init_context(ctx);
+            lay_reserve_items_capacity(ctx, 1024);
+        }
+        else {
+            ctx = parent->ctx;
+        }
+
         id = lay_item(ctx);
 
-        if (parent) {
-            lay_insert(ctx, parent->id, id);
-        }
+        // if (parent) {
+        //     lay_insert(ctx, parent->id, id);
+        // }
     }
+    ~Box();
 
     void set_size(int rows, int cols) {
         lay_set_size_xy(ctx, id, cols, rows);
@@ -60,8 +78,23 @@ public:
         lay_insert(ctx, id, box->id);
     }
 
-    void run_context(){
-        lay_run_context(ctx);
+    void run_context();
+
+    void set_margins_ltrb(int left, int top, int right, int bottom) {
+        lay_set_margins_ltrb(ctx,id,left, top, right, bottom);
+    }
+
+    void get_margins_ltrb(int* left, int* top, int* right, int* bottom) {
+        lay_scalar l,t,r,b;
+        lay_get_margins_ltrb(ctx,id,&l,&t,&r,&b);
+        *left = (int)l;
+        *top = (int)t;
+        *right = (int)r;
+        *bottom = (int)b;
+        // *left = 0;
+        // *top = 0;
+        // *right = 0;
+        // *bottom = 0;
     }
 
     Widget* get_parent_widget() { return parent_widget; }
@@ -84,7 +117,7 @@ public:
     std::vector<BoxItem*> children;
 
     lay_id       id = {};
-    lay_context* ctx = {};
+    lay_context* ctx = nullptr;
     int          box_flags = 0;
     int          layout_flags = 0;
     Widget*      parent_widget = nullptr;
@@ -92,6 +125,12 @@ public:
 
 class VBoxLayout : public Box {
 public:
+    VBoxLayout(int rows, int cols, Widget* parent) : Box(parent) {
+        set_size(rows, cols);
+    }
+
+    VBoxLayout(Widget* parent);
+
     VBoxLayout(int rows, int cols, Box* parent = nullptr)
         : Box(rows, cols, parent)
     {
@@ -107,6 +146,12 @@ public:
 
 class HBoxLayout : public Box {
 public:
+    HBoxLayout(int rows, int cols, Widget* parent) : Box(parent) {
+        set_size(rows, cols);
+    }
+
+    HBoxLayout(Widget* parent);
+
     HBoxLayout(int rows, int cols, Box* parent = nullptr)
         : Box(rows, cols, parent)
     {

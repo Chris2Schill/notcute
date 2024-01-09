@@ -4,6 +4,6 @@
 
 namespace notcute {
 
-lay_context* get_layout_context();
+// lay_context* get_layout_context();
 
 }
