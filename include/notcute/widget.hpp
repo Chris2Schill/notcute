@@ -1,11 +1,16 @@
 #pragma once
 
 #include <boost/signals2.hpp>
+#include <notcurses/notcurses.h>
 #include "object.hpp"
 #include "box.hpp"
 #include "rect.hpp"
 
 namespace notcute {
+
+
+template<typename T>
+using signal = boost::signals2::signal<T>;
 
 class Layout;
 class Event;
@@ -45,6 +50,9 @@ public:
     ~Widget() {
         log_debug(fmt::format("deleting {} widget", get_name()));
         delete box;
+
+        log_debug(fmt::format("deleting {}s ncplane", get_name()));
+        delete plane;
     }
 
     virtual void set_layout(Box* layout);
@@ -89,7 +97,17 @@ public:
     
     void reparent(Widget* new_parent) {
         parent = new_parent;
-        plane->reparent_family(new_parent->plane);
+        if (new_parent) {
+            plane->reparent_family(new_parent->plane);
+        }
+        else {
+            plane->reparent_family((ncpp::Plane*)nullptr);
+        }
+        //
+        // Box* layout = get_layout();
+        // if (layout) {
+        //     layout->parent
+        // }
     }
 
     void set_name(const std::string& name) {
@@ -102,16 +120,30 @@ public:
         return name.empty() ? NO_NAME : name;
     }
 
+    // void create_layout_item() {
+    //     if (box->layout_item) {
+    //         delete box->layout_item;
+    //     }
+    //
+    //     if (parent) {
+    //         box->layout_item = new Lay_Item(*parent->get_layout()->layout_item);
+    //     }
+    //     else {
+    //         box->layout_item = new Lay_Item(box->rect.rows(), box->rect.cols());
+    //         layout_ctx_map[this] = box->layout_item->get_context();
+    //     }
+    // }
+
     ncpp::Plane* get_plane() { return plane; }
 
     Box* get_layout() { return box; }
 
     void set_geometry(const Rect& rect);
 
-    virtual void on_event(Event* e);
-    virtual void on_draw_event(DrawEvent* e);
-    virtual void on_keyboard_event(KeyboardEvent* e);
-    virtual void on_resize_event(ResizeEvent* e);
+    virtual bool on_event(Event* e);
+    virtual bool on_draw_event(DrawEvent* e);
+    virtual bool on_keyboard_event(KeyboardEvent* e);
+    virtual bool on_resize_event(Event* e);
 
     static ncplane_options& default_options() {
         auto& nc = ncpp::NotCurses::get_instance();
@@ -157,13 +189,29 @@ public:
 
 
     Rect get_geometry() {
-        // Box* b = get_layout();
         return get_layout()->get_rect();
     }
 
     bool is_top_level() {
         return get_parent() == nullptr;
     }
+
+    Widget* get_top_level_widget() {
+        Widget* w = this;
+        while (!w->is_top_level()) {
+            w = w->get_parent();
+        }
+        return w;
+    }
+
+    //
+    // lay_context* Box::get_top_level_ctx(Widget* w) {
+    //     auto iter = Widget::layout_ctx_map.find(w);
+    //     if (iter == Widget::layout_ctx_map.end()) {
+    //         return nullptr;
+    //     }
+    //     return iter->second;
+    // }
 
 protected:
     ncpp::Plane* plane = nullptr;
@@ -173,12 +221,8 @@ private:
     bool         is_showing = false; //not to be confused with a visible widget
     FocusPolicy  focus_policy = FocusPolicy::NO_FOCUS;
     static std::unordered_map<ncpp::Plane*, std::string> plane_name_map;
+    static std::unordered_map<Widget*, lay_context*> layout_ctx_map;
     static Widget* focused_widget;
-};
-
-class MainWindow : public Widget {
-public:
-    MainWindow();
 };
 
 inline void draw_coords(Widget* w) {

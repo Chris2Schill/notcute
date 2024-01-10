@@ -28,7 +28,6 @@ struct Renderer {
     }
 
     static Renderer* get_instance() {
-        static Renderer* instance = new Renderer;
         return instance;
     }
 
@@ -55,6 +54,7 @@ struct Renderer {
     ncpp::NotCurses* get_nc() { return &nc; }
 
 private:
+    static Renderer* instance;
     std::unordered_map<Widget*, ncpp::Pile*> piles;
     ncpp::NotCurses nc;
 };

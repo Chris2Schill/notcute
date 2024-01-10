@@ -9,6 +9,7 @@
 #include <notcute/frame_widget.hpp>
 #include <notcute/list_widget.hpp>
 #include <notcute/edittext.hpp>
+#include <notcute/main_window.hpp>
 
 using namespace notcute;
 
@@ -69,10 +70,7 @@ int frame_test() {
 }
 
 int list_test() {
-    notcute::Renderer* renderer = notcute::Renderer::get_instance();
-    Size term_size = renderer->get_term_size();
-    notcute::Widget* main_window = new FrameWidget();
-    main_window->set_layout(new VBoxLayout(term_size.height, term_size.width));
+    MainWindow* main_window = new MainWindow;
     main_window->set_name("main window");
     // main_window->get_layout()->set_margins_ltrb(1,1,1,1);
 
@@ -107,6 +105,7 @@ int list_test() {
     list->add_text("Option10");
     list->add_text("Option11");
     list->add_text("Option12");
+    list->set_focus();
     list->add_widget(new TextWidget("FANCYSHMANCE TEXT"));
     // list_frame->get_layout()->add_widget(new TextWidget("FANCYSHMANCE TEXT", main_window));
 
@@ -133,10 +132,16 @@ int edittext_test() {
 }
 
 int layout_test() {
-    notcute::Renderer* renderer = notcute::Renderer::get_instance();
-    Size term_size = renderer->get_term_size();
-    notcute::Widget* main_window = new FrameWidget();
-    main_window->set_layout(new VBoxLayout(term_size.height, term_size.width));
+    Widget* main_window = new MainWindow;
+    main_window->set_name("main_window");
+
+    // for (int i = 0; i < 2; ++i)
+    // {
+    //     notcute::TextWidget* text = new notcute::TextWidget("SCHILLDAWG", main_window);
+    //     text->set_name("text_widget");
+    //     main_window->get_layout()->add_widget(text);
+    //     main_window->get_layout()->set_behave(LAY_CENTER);
+    // }
 
     notcute::Widget* wid1 = new FrameWidget(main_window);
     notcute::Widget* wid2 = new FrameWidget(main_window);
@@ -165,62 +170,62 @@ int layout_test() {
 }
 
 int main() {
-    // return layout_test();
-    return edittext_test();
+    return frame_test();
+    // return edittext_test();
 }
 
-int main2() {
-    // Size term_size = renderer->get_term_size();
-
-    ncpp::NotCurses nc;
-    unsigned rows, cols;
-    nc.get_term_dim(&rows, &cols);
-    Box* root2 = new Box(rows, cols);
-    // Box* root2 = new Box(1280,800);
-    root2->set_contain(LAY_ROW);
-
-    Box* mlist = new Box(20, 60, root2);
-    Box* mcontents = new Box(1,1, root2);
-
-    Box* mlist_i1 = new Box(20, 20, mlist);
-    mlist_i1->set_behave(LAY_FILL);
-    Box* mlist_i2 = new Box(20, 20, mlist);
-    mlist_i2->set_behave(LAY_FILL);
-    Box* mlist_i3 = new Box(20, 20, mlist);
-    mlist_i3->set_behave(LAY_FILL);
-
-
-    mlist->set_behave(LAY_VCENTER | LAY_LEFT | LAY_VFILL);
-    mlist->set_contain(LAY_COLUMN);
-    //
-    // root2->insert(mcontents);
-    mcontents->set_behave(LAY_HFILL | LAY_VFILL);
-
-    root2->run_context();
-
-
-    print("root", root2->get_rect());
-    print("master list", mlist->get_rect());
-    print("contents", mcontents->get_rect());
-    // print("contents", mcontents->get_rect());
-
-
-    ncpp::Plane* mplane = from_box(mlist);
-    ncpp::Plane* cplane = from_box(mcontents);
-    ncpp::Plane* mlist_i1p = from_box(mlist_i1);
-    ncpp::Plane* mlist_i2p = from_box(mlist_i2);
-    ncpp::Plane* mlist_i3p = from_box(mlist_i3);
-
-    draw(mlist, mplane, "m");
-    draw(mcontents, cplane, "z");
-    draw(mlist_i1, mlist_i1p, "a");
-    draw(mlist_i2, mlist_i2p, "b");
-    draw(mlist_i3, mlist_i3p, "c");
-
-    while(true) {
-        nc.render();
-        std::this_thread::sleep_for(std::chrono::milliseconds(16));
-    }
-
-    return 0;
-}
+// int main2() {
+//     // Size term_size = renderer->get_term_size();
+//
+//     ncpp::NotCurses nc;
+//     unsigned rows, cols;
+//     nc.get_term_dim(&rows, &cols);
+//     Box* root2 = new Box(rows, cols);
+//     // Box* root2 = new Box(1280,800);
+//     root2->set_contain(LAY_ROW);
+//
+//     Box* mlist = new Box(20, 60, root2);
+//     Box* mcontents = new Box(1,1, root2);
+//
+//     Box* mlist_i1 = new Box(20, 20, mlist);
+//     mlist_i1->set_behave(LAY_FILL);
+//     Box* mlist_i2 = new Box(20, 20, mlist);
+//     mlist_i2->set_behave(LAY_FILL);
+//     Box* mlist_i3 = new Box(20, 20, mlist);
+//     mlist_i3->set_behave(LAY_FILL);
+//
+//
+//     mlist->set_behave(LAY_VCENTER | LAY_LEFT | LAY_VFILL);
+//     mlist->set_contain(LAY_COLUMN);
+//     //
+//     // root2->insert(mcontents);
+//     mcontents->set_behave(LAY_HFILL | LAY_VFILL);
+//
+//     root2->run_context();
+//
+//
+//     print("root", root2->get_rect());
+//     print("master list", mlist->get_rect());
+//     print("contents", mcontents->get_rect());
+//     // print("contents", mcontents->get_rect());
+//
+//
+//     ncpp::Plane* mplane = from_box(mlist);
+//     ncpp::Plane* cplane = from_box(mcontents);
+//     ncpp::Plane* mlist_i1p = from_box(mlist_i1);
+//     ncpp::Plane* mlist_i2p = from_box(mlist_i2);
+//     ncpp::Plane* mlist_i3p = from_box(mlist_i3);
+//
+//     draw(mlist, mplane, "m");
+//     draw(mcontents, cplane, "z");
+//     draw(mlist_i1, mlist_i1p, "a");
+//     draw(mlist_i2, mlist_i2p, "b");
+//     draw(mlist_i3, mlist_i3p, "c");
+//
+//     while(true) {
+//         nc.render();
+//         std::this_thread::sleep_for(std::chrono::milliseconds(16));
+//     }
+//
+//     return 0;
+// }

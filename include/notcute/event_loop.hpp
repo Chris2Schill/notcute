@@ -57,19 +57,13 @@ private:
     ncinput ni = {};
 };
 
-class ResizeEvent : public Event {
-public:
-    ResizeEvent(Widget* w, const Rect& r)
-        :Event(w, EventType::RESIZE)
-        , rect(r)
-    {
-    }
-
-    const Rect& get_rect() const { return rect; }
-
-private:
-    Rect rect;
-};
+// class ResizeEvent : public Event {
+// public:
+//     ResizeEvent(Widget* w)
+//         :Event(w, EventType::RESIZE)
+//     {
+//     }
+// };
 
 template<typename T, typename... U>
 auto getAddress(std::function<T(U...)> f)

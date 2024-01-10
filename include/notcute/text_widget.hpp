@@ -12,7 +12,7 @@ public:
     TextWidget(const std::string& text, Widget* parent = nullptr)
         : Widget(parent)
     {
-        set_layout(new VBoxLayout(parent));
+        set_layout(new VBoxLayout);
         get_layout()->set_contain(LAY_LAYOUT);
         set_text(text);
     }

@@ -32,6 +32,8 @@ private:
 class ListWidgetItem : public ListItem {
 public:
     ListWidgetItem(Widget* w) : wid(w) {}
+    ~ListWidgetItem() { delete wid; }
+
 
     virtual Widget* get_widget() override { return wid; }
 
@@ -48,8 +50,13 @@ public:
     ListWidget(Widget* parent = nullptr)
         :Widget(parent)
     {
-        set_layout(new VBoxLayout(parent));
+        set_layout(new VBoxLayout);
         set_focus_policy(FocusPolicy::FOCUS);
+    }
+    ~ListWidget() {
+        for (ListItem* item : items) {
+            delete item;
+        }
     }
 
     void add_item(ListItem* item) {
@@ -62,7 +69,7 @@ public:
 
     void add_widget(Widget* w) {
         w->reparent(this);
-        get_layout()->insert(w->get_layout());
+        // get_layout()->insert(w->get_layout());
         add_item(new ListWidgetItem(w));
     }
 
@@ -97,21 +104,21 @@ public:
         }
     }
 
-    void on_keyboard_event(KeyboardEvent* e) override {
+    bool on_keyboard_event(KeyboardEvent* e) override {
         switch (e->get_key()) {
             case 'j':
             case NCKEY_DOWN:
                 next_item();
-                break;
+                return true;
             case 'k':
             case NCKEY_UP:
                 prev_item();
-                break;
+                return true;
             case NCKEY_ENTER:
                 item_selected(items[selected_idx]);
-                break;
+                return true;
             default:
-                break;
+                return false;
         }
     }
 
