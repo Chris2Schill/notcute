@@ -21,6 +21,7 @@
 //#include <unistd.h>
 #include <mutex>
 #include <cassert>
+#include <atomic>
 #include <sys/stat.h>
 
 #if defined(__GNUC__) && __GNUC__ >= 9
@@ -465,27 +466,32 @@ class Channel : public Reader<T>, public Writer<T>
 public:
 	using error = std::shared_ptr<std::runtime_error>;
 
-    bool empty() { return channel->empty(); }
+    bool empty() { return isEmpty; }
 
     std::pair<T, error> read() override
     {
-        if (channel->empty()) { return {T{}, ERROR_CHANNEL_EMPTY}; }
+        if (isEmpty) { return {T{}, ERROR_CHANNEL_EMPTY}; }
 
 		auto lock = *channel;
 		auto& queue = *lock;
 		T value = queue.front();
 		queue.pop();
+        isEmpty = queue.empty();
 		return {value, nullptr};
     }
 
     error write(const T& value) override
 	{
-		channel->push(value);
+		auto lock = *channel;
+		auto& queue = *lock;
+		queue.push(value);
+        isEmpty = false;
 		return nullptr;
 	}
 
 private:
     util::synchronized_value<std::queue<T>> channel;
+    std::atomic<bool> isEmpty = true;
 
 	error ERROR_CHANNEL_EMPTY = std::make_shared<std::runtime_error>("channel is empty");
 };

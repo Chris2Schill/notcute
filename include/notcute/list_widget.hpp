@@ -1,5 +1,6 @@
 #pragma once
 
+#include <notcurses/notcurses.h>
 #include <string>
 
 #include "widget.hpp"
@@ -15,6 +16,34 @@ public:
 
     virtual std::string to_string() const = 0;
 };
+
+
+template<typename T>
+std::string to_string(const T&);
+
+template<typename T>
+class ListItem_t : public ListItem {
+public:
+    ListItem_t(T t) : obj(t) {}
+
+    virtual std::string to_string() const override {
+        return notcute::to_string<T>(obj);
+    }
+
+    T& get_item() {
+        return obj;
+    }
+
+private:
+    T obj;
+};
+
+template<typename T>
+T list_widget_item_t_get_item(notcute::ListItem* item) {
+    // Will throw an exception if the dynamic cast fails
+    ListItem_t<T>& obj = dynamic_cast<ListItem_t<T>&>(*item);
+    return obj.get_item();
+}
 
 class ListTextItem : public ListItem {
 public:
@@ -52,6 +81,13 @@ public:
     {
         set_layout(new VBoxLayout);
         set_focus_policy(FocusPolicy::FOCUS);
+
+        uint32_t fg, bg;
+        fg = NCCHANNEL_INITIALIZER(1,1,1);
+        bg = NCCHANNEL_INITIALIZER(0,0,0);
+        bg &= NCALPHA_TRANSPARENT;
+
+        plane->set_channels(ncchannels_combine(fg, bg));
     }
     ~ListWidget() {
         for (ListItem* item : items) {
@@ -60,7 +96,14 @@ public:
     }
 
     void add_item(ListItem* item) {
+        bool prev = is_selected_idx_valid();
         items.push_back(item);
+        bool valid = is_selected_idx_valid();
+
+        if (valid != prev && valid) {
+            item_hovered(items[selected_idx]);
+        }
+        redraw();
     }
 
     void add_text(const std::string& text) {
@@ -69,8 +112,14 @@ public:
 
     void add_widget(Widget* w) {
         w->reparent(this);
-        // get_layout()->insert(w->get_layout());
         add_item(new ListWidgetItem(w));
+    }
+
+    void clear() {
+        for (ListItem* item : items) {
+            delete item;
+        }
+        items.clear();
     }
 
     void next_item() {
@@ -86,6 +135,7 @@ public:
                 row_start = std::clamp<int>(row_start, 0, items.size()-height);
             }
         }
+        redraw();
     }
 
     void prev_item() {
@@ -102,6 +152,11 @@ public:
                 row_start--;
             }
         }
+        redraw();
+    }
+
+    bool is_selected_idx_valid() const {
+        return (0 <= selected_idx && selected_idx < items.size());
     }
 
     bool on_keyboard_event(KeyboardEvent* e) override {
@@ -109,13 +164,22 @@ public:
             case 'j':
             case NCKEY_DOWN:
                 next_item();
+                if (is_selected_idx_valid()) {
+                    item_hovered(items[selected_idx]);
+                }
                 return true;
             case 'k':
             case NCKEY_UP:
                 prev_item();
+                if (is_selected_idx_valid()) {
+                    item_hovered(items[selected_idx]);
+                }
                 return true;
             case NCKEY_ENTER:
-                item_selected(items[selected_idx]);
+                if (is_selected_idx_valid()) {
+                    item_selected(items[selected_idx]);
+                }
+                redraw();
                 return true;
             default:
                 return false;
@@ -123,14 +187,13 @@ public:
     }
 
     void draw(ncpp::Plane* plane) override {
-        // fill(plane, "z");
-        // plane->putstr(9,0, "TEST");
-        // return;
         int i = 0;
-        for (int row = row_start; row < items.size() && i <= get_layout()->get_rect().height(); ++i, ++row) {
+        for (int row = row_start;
+             row < items.size() && i <= get_layout()->get_rect().height();
+             ++i, ++row)
+        {
             ListItem*& item = items[row];
 
-            plane->set_channels(NCCHANNEL_INITIALIZER(1,1,1));
             if (row == selected_idx) {
                 plane->set_bg_palindex(2);
                 plane->set_fg_palindex(2);
@@ -139,17 +202,16 @@ public:
                 plane->set_bg_palindex(1);
                 plane->set_fg_palindex(1);
             }
-            plane->putstr(i,0, item->to_string().c_str());
+            plane->putstr(i, 0, item->to_string().c_str());
         }
-        plane->putstr(i+1,0, "TESSTTTT");
-
-        // plane->perimeter_rounded(0, 0, 0);
-        // draw_coords(this);
     }
 
     const std::vector<ListItem*>& get_items() { return items; }
 
+    int get_selected_idx() const { return selected_idx; }
+
     // Signals
+    boost::signals2::signal<void(ListItem*)> item_hovered;
     boost::signals2::signal<void(ListItem*)> item_selected;
 
 private:

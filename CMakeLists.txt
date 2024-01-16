@@ -24,6 +24,7 @@ set(SOURCES
     src/box.cpp
     src/layout.cpp
     src/event_loop.cpp
+    src/scroll_area.cpp
 )
 
 add_library(notcute STATIC ${SOURCES})

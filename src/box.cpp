@@ -23,6 +23,7 @@ Box::Box(int rows, int cols, Widget* parent) {
 Box* WidgetItem::get_layout() { return wid->get_layout(); }
 
 void Box::insert_subtree_node(Box* node) {
+    assert(node != nullptr);
     // if (!node->layout_item) {
     node->destroy_layout_item_subtree();
     // rebuild_layout();
@@ -36,6 +37,8 @@ void Box::insert_subtree_node(Box* node) {
 }
 
 void Box::add_widget(Widget* widget) {
+    assert(widget != nullptr);
+
     widget->reparent(get_parent_widget());
     children.push_back(new WidgetItem(widget));
 
@@ -55,7 +58,9 @@ Box::~Box() {
 }
 
 void Box::update_box() {
-    log_debug("update_box() " + get_parent_widget()->get_name());
+    // TODO: update_box does not need to happen until a redraw/resize event.
+    // Currently is happens on every insertion/deletion of a view tree
+    // log_debug("update_box() " + get_parent_widget()->get_name());
     if (layout_item) {
         lay_vec4 r = layout_item->get_rect();
         rect = Rect {
@@ -116,6 +121,7 @@ void Box::create_layout_item_subtree(Box* parent) {
 void Box::invalidate(bool send_resize) {
     log_debug("invalidate() " + get_parent_widget()->get_name());
     layout_item->set_size(rect.rows(), rect.cols());
+    layout_item->set_margins_ltrb(margins.left, margins.top, margins.right, margins.left);
     layout_item->set_contain(contain_flags);
     layout_item->set_behave(behave_flags);
 
@@ -128,11 +134,13 @@ void Box::invalidate(bool send_resize) {
     if (send_resize) {
         EventLoop::get_instance()->post(new Event(get_parent_widget(), Event::RESIZE));
     }
+    get_widget()->redraw();// TODO: needed? or just fix resize
 }
 
 void Box::run_context() {
     if (layout_item) {
-        layout_item->run_item();
+        layout_item->run_context();
+        post_run_context();
     }
     else {
         log_debug("Failed to run context: layout_item is null");
@@ -202,6 +210,33 @@ void Box::rebuild_layout() {
     // }
     // top_level->get_layout()->rebuild_layout_recursive_helper(top_level->get_layout());
     // top_level->get_layout()->rebuild_layout_recursive_helper();
+}
+
+void Box::print_view_tree_dimensions(int depth) {
+    std::stringstream ss;
+    for (int i = 0; i < depth; ++i) {
+        ss << " |";
+    }
+
+    lay_vec4 r = layout_item->get_rect();
+    Rect rect {
+        Point{r[0], r[1]},
+        Size{(unsigned)r[2], (unsigned)r[3]},
+    };
+
+    ss << "-" << get_widget()->get_name();
+    ss << " = " << rect.to_string();
+
+    notcute::log_debug(ss.str());
+
+    for (BoxItem* child : get_children()) {
+        if (Box* l = child->get_layout(); l) {
+            // Widget* w = l->get_parent_widget();
+            // notcute::log_debug("rebuilding: " + w->get_name());
+            l->print_view_tree_dimensions(depth+1);
+        }
+    }
+    
 }
 
 // void Box::rebuild_layout_recursive_helper() {

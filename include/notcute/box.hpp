@@ -1,7 +1,7 @@
 #pragma once
 
-#include <algorithm>
 #include <vector>
+#include <sstream>
 #include "layout.h"
 #include "rect.hpp"
 #include "layout.hpp"
@@ -128,6 +128,12 @@ public:
         }
     }
 
+    void add_widgets(std::vector<notcute::Widget*> ws) {
+        for (auto& w : ws) {
+            add_widget(w);
+        }
+    }
+
     // void insert(Box* box) {
     //     if (layout_item) {
     //         layout_item->insert(box->layout_item);
@@ -153,8 +159,23 @@ public:
     //     ctx = context; 
     //     id = lay_item(ctx);
     // }
+    struct Margins {
+        int left;
+        int top;
+        int right;
+        int bottom;
+    };
+
+    Margins margins = {};
 
     void set_margins_ltrb(int left, int top, int right, int bottom) {
+        margins = {
+            .left = left,
+            .top = top,
+            .right = right,
+            .bottom = bottom,
+        };
+
         if (layout_item) {
             layout_item->set_margins_ltrb(left, top, right, bottom);
         }
@@ -186,7 +207,32 @@ public:
 
     void add_widget(Widget* widget);
 
+    virtual void post_run_context() {
+        if (layout_item) {
+            lay_vec4 dim = layout_item->get_rect();
+            rect.set_left(dim[0]);
+            rect.set_top(dim[1]);
+            rect.set_width(dim[2]);
+            rect.set_height(dim[3]);
+        }
+
+        for (BoxItem* child : children) {
+            if (Box* b = child->get_layout(); b) {
+                b->post_run_context();
+            }
+        }
+    }
+
     Rect get_rect() {
+        //TODO: this could probably be optimized after a resize
+        // if (layout_item) {
+        //     layout_item->run_context();
+        //     lay_vec4 dim = layout_item->get_rect();
+        //     rect.set_left(dim[0]);
+        //     rect.set_top(dim[1]);
+        //     rect.set_width(dim[2]-dim[0]);
+        //     rect.set_height(dim[3]-dim[1]);
+        // }
         return rect;
     }
 
@@ -223,6 +269,13 @@ public:
     bool is_enabled() const { return enabled; } 
 
     Box* get_parent_layout();
+
+    int get_behave() const { return behave_flags; }
+    int get_contain() const { return contain_flags; }
+
+    void print_view_tree_dimensions(int depth = 0);
+    
+
 protected:
 
     // Will rebuild the entire lay_context no matter which node we call it from

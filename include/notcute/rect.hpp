@@ -39,10 +39,13 @@ struct Rect {
         return fmt::format("{} {}", m_pos.to_string(), m_size.to_string());
     }
 
+    void set_pos(Point pos) { m_pos = pos; }
+    void set_pos(int x, int y) { set_pos({x,y}); }
+
     void set_top(int y) { m_pos.y = y; }
-    void set_bottom(int y) { m_pos.y = y-m_size.height; }
     void set_left(int x) { m_pos.x = x; }
     void set_right(int x) { m_pos.x = x-m_size.width; }
+    void set_bottom(int y) { m_pos.y = y-m_size.height; }
 
     unsigned rows() const { return m_size.height; }
     unsigned cols() const { return m_size.width; }

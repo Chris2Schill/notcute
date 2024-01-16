@@ -12,6 +12,9 @@ namespace notcute {
 template<typename T>
 using signal = boost::signals2::signal<T>;
 
+template<typename T>
+using slot = boost::signals2::slot<T>;
+
 class Layout;
 class Event;
 class DrawEvent;
@@ -23,7 +26,33 @@ enum class FocusPolicy {
     NO_FOCUS
 };
 
-inline void fill(ncpp::Plane* plane, std::string c) {
+inline uint64_t RGB(int r, int g, int b) {
+    ncpp::Cell c(' ');
+    c.set_fg_rgb8(r,g,b);
+    return c.get_channels();
+}
+
+inline void fill(ncpp::Plane* plane, const ncpp::Cell& c) {
+    plane->home();
+    Rect rect {
+        Point{
+            .x = plane->get_x(),
+            .y = plane->get_y(),
+        },
+        Size {
+            .width = plane->get_dim_x(),
+            .height = plane->get_dim_y(),
+        }
+    };
+
+    for (int i = 0; i < rect.height(); i++) {
+        for (int j = 0; j < rect.width(); j++) {
+            plane->putc(i, j, c);
+        }
+    }
+}
+
+inline void fill(ncpp::Plane* plane, const std::string& c) {
     plane->erase();
 
     Rect rect {
@@ -58,15 +87,24 @@ public:
     virtual void set_layout(Box* layout);
     void    show();
 
-    virtual void draw() {
-        pre_draw(plane);
-        draw(plane);
-        post_draw(plane);
+    void debug_set_plane_color(int r, int g, int b) {
+        ncpp::Cell c(' ');
+        c.set_bg_rgb8(r,g,b);
+        // c.set_fg_rgb8(r,g,b);
+        plane->set_base_cell(c);
+        redraw();
     }
 
     virtual void pre_draw(ncpp::Plane* plane) {
         plane->erase();
-        box->run_context();
+
+        // To ease implementation of scroll area
+        // we fill the plane with spaces. TODO:
+        // remove this crutch
+        // ncpp::Cell c;
+        // plane->get_base(c);
+        // fill(plane, c);
+        // plane->home();
 
         int left = 0, top = 0, right = 0, bottom = 0;
         Rect rect = box->get_rect();
@@ -81,12 +119,26 @@ public:
         plane->resize(rect.height(), rect.width());
         plane->move(rect.y(), rect.x());
         plane->resize_realign();
+
+        if (Box* layout = get_layout(); layout) {
+            for (BoxItem* item : box->get_children()) {
+                if (Widget* w = item->get_widget(); w) {
+                    w->pre_draw(w->get_plane());
+                }
+            }
+        }
     }
 
-    virtual void draw(ncpp::Plane* plane) { }
+    virtual void redraw();
 
-    virtual void post_draw(ncpp::Plane* plane) {
+    bool on_event_start(Event* e);
+
+    virtual void draw(ncpp::Plane* plane) {
         draw_children();
+    }
+
+    bool is_focused() {
+        return focused_widget == this;
     }
 
     void draw_children();
@@ -103,11 +155,6 @@ public:
         else {
             plane->reparent_family((ncpp::Plane*)nullptr);
         }
-        //
-        // Box* layout = get_layout();
-        // if (layout) {
-        //     layout->parent
-        // }
     }
 
     void set_name(const std::string& name) {
@@ -138,7 +185,7 @@ public:
 
     Box* get_layout() { return box; }
 
-    void set_geometry(const Rect& rect);
+    virtual void set_geometry(const Rect& rect);
 
     virtual bool on_event(Event* e);
     virtual bool on_draw_event(DrawEvent* e);
@@ -168,7 +215,16 @@ public:
 
     void set_focus() {
         if (focus_policy == FocusPolicy::FOCUS) {
-            focused_widget = this;
+            if (focused_widget != this) {
+                Widget* prev_focused_widget = focused_widget;
+                focused_widget = this;
+
+                if (prev_focused_widget) {
+                    prev_focused_widget->focus_state_changed(false);
+                }
+
+                focused_widget->focus_state_changed(true);
+            }
         }
         else {
             log_debug(fmt::format("Tried to set focus on {} but focus policy is NO_FOCUS", get_name()));
@@ -204,14 +260,8 @@ public:
         return w;
     }
 
-    //
-    // lay_context* Box::get_top_level_ctx(Widget* w) {
-    //     auto iter = Widget::layout_ctx_map.find(w);
-    //     if (iter == Widget::layout_ctx_map.end()) {
-    //         return nullptr;
-    //     }
-    //     return iter->second;
-    // }
+    signal<void(bool)> focus_state_changed;
+
 
 protected:
     ncpp::Plane* plane = nullptr;
@@ -220,8 +270,9 @@ private:
     Widget*      parent = nullptr;
     bool         is_showing = false; //not to be confused with a visible widget
     FocusPolicy  focus_policy = FocusPolicy::NO_FOCUS;
+    bool         dirty = false;
+    // int          fg_pal_index = 0;
     static std::unordered_map<ncpp::Plane*, std::string> plane_name_map;
-    static std::unordered_map<Widget*, lay_context*> layout_ctx_map;
     static Widget* focused_widget;
 };
 

@@ -15,6 +15,11 @@ public:
         set_layout(new VBoxLayout);
         get_layout()->set_contain(LAY_LAYOUT);
         set_text(text);
+        // TODO REMOVE
+        // get_layout()->set_behave(LAY_LEFT|LAY_TOP);
+        get_layout()->set_behave(LAY_HFILL);
+
+        debug_set_plane_color(111,0,200);
     }
 
     void draw(ncpp::Plane* plane) override {
@@ -35,6 +40,7 @@ public:
         // r.set_width(text.size());
         // r.set_height(1);
         set_geometry(r);
+        redraw();
     }
 
     std::string to_string() const override {

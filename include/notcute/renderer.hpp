@@ -35,6 +35,14 @@ struct Renderer {
         return piles[w];
     }
 
+    static notcute::Point get_term_center() {
+        auto size = Renderer::get_instance()->get_term_size();
+        return Point{
+            .x = static_cast<int>(size.width/2),
+            .y = static_cast<int>(size.height/2),
+        };
+    }
+
     ncpp::Pile* create_pile_for_widget(Widget* w) {
         auto iter = piles.find(w);
         if (iter == piles.end()) {

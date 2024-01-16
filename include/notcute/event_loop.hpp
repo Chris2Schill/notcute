@@ -19,6 +19,8 @@ public:
         RESIZE,
         KEYBOARD_EVENT,
         MOUSE_EVENT,
+
+        USER_EVENT,
     };
 
     Event(Widget* sender, EventType t)
@@ -131,9 +133,15 @@ public:
         return el;
     }
 
+    void set_showing_widget(Widget* w) { showing_widget = w; }
+    Widget* get_showing_widget() const { return showing_widget; }
+
+private:
+
     std::vector<Subscriber<Event>> subscribers;
 
     util::NonBlockingChannel<Event*> events;
+    notcute::Widget* showing_widget = nullptr;
 };
 
 }

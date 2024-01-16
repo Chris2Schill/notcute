@@ -2,6 +2,8 @@
 
 #pragma push_macro("U")
 #undef U
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+#define SPDLOG_LOGGER_TRACE
 #include <spdlog/logger.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #pragma pop_macro("U")
