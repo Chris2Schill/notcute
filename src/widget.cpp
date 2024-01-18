@@ -42,7 +42,7 @@ Widget::Widget(Widget* parent)
     notcurses_default_background(nc, &bg);
     // uint64_t channels = ((uint64_t)fg << 32) + (uint64_t)bg;
     // c.set_fg_rgb(fg);
-    c.set_bg_rgb(bg);
+    // c.set_bg_rgb(bg);
     plane->set_base_cell(c);
     // plane->set_fg_alpha(NCALPHA_HIGHCONTRAST);
     // plane->set_fg_palindex(255);

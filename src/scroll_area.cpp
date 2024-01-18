@@ -1,3 +1,4 @@
+#include "notcute/glyphs.hpp"
 #include "notcute/logger.hpp"
 #include <notcute/scroll_area.hpp>
 
@@ -5,249 +6,128 @@
 
 namespace notcute{
 
-void ScrollArea::draw_children(Widget* w) {
-
-    ncpp::Plane* p = get_plane();
-    int left_margin, top_margin, _;
-    content->get_layout()->get_margins_ltrb(&left_margin, &top_margin, &_, &_);
-
-    int yoffset = content->get_geometry().y() - top_margin;
-    int xoffset = content->get_geometry().x() - left_margin;
-
-    p->translate_abs(&yoffset,&xoffset);
-
-    for (BoxItem* box : w->get_layout()->get_children()) {
-        if (Widget* cw = box->get_widget(); cw) {
-            ncpp::Plane* cp = cw->get_plane();
-
-            Rect cprect = cw->get_geometry();
-            p->translate_abs(&cprect.m_pos.y, &cprect.m_pos.x);
-
-            int cursory = cprect.y()-yoffset;
-            int cursorx = cprect.x()+xoffset;
-
-            cursory -= content_subwindow.y;
-            cursorx -= content_subwindow.x;
-
-            p->cursor_move(cursory,cursorx);
-            for (int y = 0; y < cp->get_dim_y(); ++y) {
-                for (int x = 0; x < cp->get_dim_x(); ++x) {
-                    ncpp::Cell cell;
-                    cp->get_at(y,x,cell);
-
-                    p->set_channels(cell.get_channels());
-                    p->putc(cursory+y,cursorx+x,cell);
-                }
-            }
-            draw_children(cw);
-        }
-    }
-
-}
+// void ScrollArea::draw_children(Widget* w) {
+//
+//     ncpp::Plane* p = get_plane();
+//     int left_margin, top_margin, _;
+//     content->get_layout()->get_margins_ltrb(&left_margin, &top_margin, &_, &_);
+//
+//     int yoffset = content->get_geometry().y() - top_margin;
+//     int xoffset = content->get_geometry().x() - left_margin;
+//
+//     p->translate_abs(&yoffset,&xoffset);
+//
+//     for (BoxItem* box : w->get_layout()->get_children()) {
+//         if (Widget* cw = box->get_widget(); cw) {
+//             ncpp::Plane* cp = cw->get_plane();
+//
+//             Rect cprect = cw->get_geometry();
+//             p->translate_abs(&cprect.m_pos.y, &cprect.m_pos.x);
+//
+//             int cursory = cprect.y()-yoffset;
+//             int cursorx = cprect.x()+xoffset;
+//
+//             cursory -= content_subwindow.y;
+//             cursorx -= content_subwindow.x;
+//
+//             p->cursor_move(cursory,cursorx);
+//             for (int y = 0; y < cp->get_dim_y(); ++y) {
+//                 for (int x = 0; x < cp->get_dim_x(); ++x) {
+//                     ncpp::Cell cell;
+//                     cp->get_at(y,x,cell);
+//
+//                     p->set_channels(cell.get_channels());
+//                     p->putc(cursory+y,cursorx+x,cell);
+//                 }
+//             }
+//             draw_children(cw);
+//         }
+//     }
+//
+// }
 
 void ScrollArea::draw(ncpp::Plane* p) {
-
-    Widget::draw_children();
-    // // p->set_scrolling(true);
-    //
-    // draw_children(content);
-    // return;
 
     log_debug("FLAT DRAW TEXTWIDGET---------------------");
     if (!content) {
         return;
     }
+    content->get_layout()->run_context();
     content->pre_draw(content->get_plane());
     content->draw(content->get_plane());
     ncpp::Plane* pflattened = create_flat_merged_plane(content);
     pflattened->move(0, 30);
 
-
-    // int y = 1;
-    // int x = 1;
-    // pflattened->translate(stdplane, &y, &x);
-    // pflattened->move(0,-10);
-    //
-
-    // ncpp::Plane* cpy = new ncpp::Plane(*pflattened);
-    // cpy->move(content->get_plane()->get_y(), content->get_plane()->get_x());
-
     content->get_plane()->erase();
     int rows = content->get_plane()->get_dim_y();
     int cols = content->get_plane()->get_dim_y();
-    for (int y = 0; y < rows; ++y) {
-        for (int x = 0; x < cols; ++x) {
+    // int rows = p->get_dim_y();
+    // int cols = p->get_dim_y();
+    int yoffset = is_content_height_fully_visible() ? -1 : 1;
+    int xoffset = is_content_width_fully_visible() ? -1 : 1;
+
+    for (int y = 1; y < rows-yoffset; ++y) {
+        for (int x = 1; x < cols-xoffset; ++x) {
             ncpp::Cell cell;
-            pflattened->get_at(y+content_subwindow.y,
-                               x+content_subwindow.x,
+            pflattened->get_at(y+content_subwindow.y-1,
+                               x+content_subwindow.x-1,
                                cell);
 
-            // cell.set_bg_rgb8(0,0,0);
             p->set_channels(cell.get_channels());
             p->putc(y,x,cell);
         }
     }
-    // delete pflattened;
+    delete pflattened;
+
+    int content_height = content->get_plane()->get_dim_y();
+    int visible_height = p->get_dim_y();
+
+    notcute::log_debug(fmt::format("SCROLL content.height={}, scrollarea.height={}",
+                content_height,
+                visible_height
+                ));
+
+
+    FrameWidget::draw(p);
+
+    // draw vertical scrollbar
+    if (!is_content_height_fully_visible()) {
+        float pct_of_content_shown = get_pct_of_content_shown();
+        notcute::log_debug(fmt::format("SCROLL pct_of_content_shown={}", pct_of_content_shown));
+
+        int scrollbar_rows = get_scrollbar_row_count();
+        notcute::log_debug(fmt::format("SCROLL scroll_bar_rows={}", scrollbar_rows));
+
+        int start_row = content_subwindow.y*get_pct_of_content_shown();
+
+
+        // Arrows
+        p->putstr(1,p->get_dim_x()-1, UP_ARROW.c_str());
+        p->putstr(p->get_dim_y()-ROWS_NOT_PART_OF_VISIBLE_HEIGHT,p->get_dim_x()-1, DOWN_ARROW.c_str());
+
+        for (int row = start_row+ROWS_NOT_PART_OF_VISIBLE_HEIGHT; row < scrollbar_rows+start_row; ++row) {
+            p->putstr(row,p->get_dim_x()-1, FULL_VERTICAL_BLOCK.c_str());
+        }
+    }
 }
 
 ncpp::Plane* ScrollArea::create_flat_merged_plane(Widget* w) {
 
-    ncpp::Plane* stdplane = ncpp::NotCurses::get_instance().get_stdplane();
-
     ncpp::Plane* p = new ncpp::Plane(*w->get_plane());
     p->move(w->get_plane()->get_y(), w->get_plane()->get_x());
-    // p->reparent(w->get_plane()->get_parent());
-
-    Rect wrect = w->get_geometry();
-    notcute::log_debug(fmt::format("FLAT {}, (w,h) = ({},{}), (y,x)=({},{})",
-                w->get_name(), wrect.width(), wrect.height(), wrect.y(), wrect.x()));
-
-    const auto& children = w->get_layout()->get_children();
-
-    int y = w->get_plane()->get_y();
-    int x = w->get_plane()->get_x();
-    // int y = 0;//w->get_plane()->get_y();
-    // int x = 0;//w->get_plane()->get_x();
-    int by = y;
-    int bx = x;
-
-    int yabs,xabs;
-    ncplane_abs_yx(w->get_plane()->to_ncplane(), &yabs, &xabs);
-    // w->get_plane()->translate(p->get_parent(), &y,&x);
-
-    // p->translate(content->get_plane(), &yabs,&xabs);
-    // content->get_plane()->translate(p, &yabs,&xabs);
-
-    // p->translate(content->get_plane(), &y,&x);
-    // w->get_plane()->translate(p, &y,&x);
-
-    notcute::log_debug(fmt::format("TEXTWIDGET {}, BEFORE=({},{}), AFTER=({},{}) ABS=({},{})", 
-                w->get_name(), by, bx, y, x, yabs, xabs));
-
-    // ncplane_move_yx(stdplane->to_ncplane(), y, x);
-    // p->move(yabs, xabs);
-    // p->move_top();
-    // p->reparent_family(w->get_plane());
-
-    // First resize the dupped plane to account for all the children
-    // ACCOUNTING FOR VERTICAL ONLY
-    // if (children.size() > 0) {
-    //     Widget* first  = children.front()->get_widget();
-    //     Widget* last  = children.back()->get_widget();
-    //
-    //     if (first && last) {
-    //         Rect r = last->get_geometry();
-    //         int width = wrect.right()-wrect.left();
-    //         int height = r.bottom()-wrect.top();
-    //         p->resize(
-    //                 r.bottom() - wrect.top(),
-    //                 wrect.right() - wrect.left()
-    //                 );
-    //         notcute::log_debug(fmt::format("FLAT {}, (w,h) = ({},{}), (y,x)=({},{})",
-    //                     w->get_name(), width, height, wrect.y(), wrect.x()));
-    //     }
-    //     else {
-    //         log_debug("ERROR WITH SCROLL AREA FLATTEN");
-    //     }
-    // }
-    // else
-    // {
-    //     notcute::log_debug(fmt::format("FLAT NO RESIZE {}, (w,h) = ({},{}), (y,x)=({},{})", 
-    //                 w->get_name(), wrect.width(), wrect.height(), wrect.y(), wrect.x()));
-    // }
-    // p->resize_realign();
-
 
     for (BoxItem* box : w->get_layout()->get_children()) {
         if (Widget* cw = box->get_widget(); cw) {
             ncpp::Plane* cp = create_flat_merged_plane(cw); 
-            // cp->move_above(p);
-
-
-            // int fy = cp->get_y();
-            // int fx = cp->get_x();
-            // cp->get_parent()->translate_abs(&fy,&fx);
-            //
-            // notcute::log_debug(fmt::format("FLAT {}, BEFORE=({},{}), AFTER=({},{})", 
-            //             w->get_name(), cp->get_y(), cp->get_x(), fy, fx));
-            //
-            // cp->move(fy, fx);
-
             cp->mergedown_simple(p); 
-
             delete cp;
         }
     }
 
-    
-    // if (w->get_parent())
-    {
-    }
-
-
     return p;
 }
 
-ncpp::Plane* create_flat_merged_plane_recursive_helper(Widget* p) {
 
-    return nullptr;
-}
-
-
-void ScrollArea::draw3(ncpp::Plane* p) {
-    // content->get_plane()->putstr("DARPPPP");
-    // char* cp_content = content->get_plane()->content(0,0,5,5);
-    Widget::draw_children();
-    // cp2->erase();
-    p->set_scrolling(true);
-    // p->putstr(cp_content);
-
-    int left_margin, top_margin, _;
-    content->get_layout()->get_margins_ltrb(&left_margin, &top_margin, &_, &_);
-
-    for (BoxItem* box : content->get_layout()->get_children()) {
-        if (Widget* w = box->get_widget(); w) {
-            ncpp::Plane* cp = w->get_plane();
-            // char* cp_content = cp->content(0,0,1,1);
-            char* cp_content = cp->content(0,0,
-                                           cp->get_dim_y(), cp->get_dim_x());
-            if (cp_content) {
-
-                Rect cprect = w->get_geometry();
-                p->translate_abs(&cprect.m_pos.y, &cprect.m_pos.x);
-
-                int yoffset = content->get_geometry().y() - top_margin;
-                int xoffset = content->get_geometry().x() - left_margin;
-                // cp->translate_abs(&yoffset,&xoffset);
-                p->translate_abs(&yoffset,&xoffset);
-
-                //
-                // yoffset -= 1;//top_margin;
-                // xoffset += 1;//left_margin;
-
-                // int yoffset = -cprect.y();
-                // int xoffset = -cprect.x();;
-
-                // log_debug("cprect.height = " + std::to_string(cprect.height()));
-                // log_debug("yoffset= = " + std::to_string(yoffset));
-
-                int cursory = cprect.y()-yoffset;
-                int cursorx = cprect.x()+xoffset;
-
-                cursory -= content_subwindow.y;
-                cursorx -= content_subwindow.x;
-
-                p->cursor_move(cursory,cursorx);
-                p->putstr(cp_content);
-                // int xcurs = p->cursor_x();
-                // p->putstr(p->cursor_y(), p->cursor_x(), );
-            }
-            else {
-                log_debug("Failed to draw scroll area child");
-            }
-        }
-    }
-}
 
 void ScrollArea::draw2(ncpp::Plane* p) {
     // draw_children();
