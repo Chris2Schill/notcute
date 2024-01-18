@@ -39,9 +39,12 @@ public:
     void set_content(Widget* w) { 
         content = w;
 
-        content->get_layout()->set_margins_ltrb(0,0,0,0);
-        get_layout()->add_widget(content);
+        content->get_layout()->set_margins_ltrb(1,1,1,1);
+        // content->reparent(nullptr);
+        // // get_layout()->add_widget(content);
         // get_layout()->add_widget(content);
+        Rect r = get_geometry();
+        content->get_plane()->move(r.y()+1, r.x()+1);
         content->get_layout()->set_behave(LAY_FILL);
         // content->get_plane()->move_bottom();
         // Rect rect = get_geometry();
@@ -50,6 +53,16 @@ public:
     
     bool on_keyboard_event(KeyboardEvent* e) override {
         switch (e->get_key()) {
+            case 'h':
+            case NCKEY_LEFT:
+                content_subwindow.x -= 1;
+                redraw();
+                break;
+            case 'l':
+            case NCKEY_RIGHT:
+                content_subwindow.x += 1;
+                redraw();
+                break;
             case 'j':
             case NCKEY_DOWN:
                 content_subwindow.y += 1;
@@ -63,6 +76,9 @@ public:
             default:
                 return false;
         }
+        notcute::log_debug(fmt::format("content_subwindow_yx=({},{})", content_subwindow.y, content_subwindow.x));
+
+        return false;
     }
 
     // void draw(ncpp::Plane* plane) override {

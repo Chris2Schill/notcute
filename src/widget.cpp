@@ -1,4 +1,6 @@
 #include <exception>
+#include <ncpp/NotCurses.hh>
+#include <notcurses/notcurses.h>
 #include <notcute/widget.hpp>
 
 #include <notcute/renderer.hpp>
@@ -33,9 +35,15 @@ Widget::Widget(Widget* parent)
     set_geometry(Rect{Point{plane->get_x(),plane->get_y()},Size{plane->get_dim_x(), plane->get_dim_y()}});
 
     // plane->set_bg_alpha(NCALPHA_HIGHCONTRAST);
-    // ncpp::Cell c(' ');
-    // plane->set_base_cell(c);
-    // c.set_bg_rgb8(200,200,200);
+    ncpp::Cell c(' ');
+    notcurses* nc = ncpp::NotCurses::get_instance();
+    uint32_t fg, bg;
+    notcurses_default_foreground(nc, &fg);
+    notcurses_default_background(nc, &bg);
+    // uint64_t channels = ((uint64_t)fg << 32) + (uint64_t)bg;
+    // c.set_fg_rgb(fg);
+    c.set_bg_rgb(bg);
+    plane->set_base_cell(c);
     // plane->set_fg_alpha(NCALPHA_HIGHCONTRAST);
     // plane->set_fg_palindex(255);
 
@@ -56,6 +64,7 @@ void Widget::set_geometry(const Rect& rect) {
     if (Box* l = get_layout(); l) {
         l->set_size(rect.rows(), rect.cols());
     }
+    get_plane()->move(rect.y(), rect.x());
     // EventLoop::get_instance()->post(new DrawEvent(this));
 }
 

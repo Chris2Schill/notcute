@@ -1,4 +1,7 @@
+#include "notcute/logger.hpp"
 #include <notcute/scroll_area.hpp>
+
+#include <notcute/text_widget.hpp>
 
 namespace notcute{
 
@@ -12,8 +15,6 @@ void ScrollArea::draw_children(Widget* w) {
     int xoffset = content->get_geometry().x() - left_margin;
 
     p->translate_abs(&yoffset,&xoffset);
-
-
 
     for (BoxItem* box : w->get_layout()->get_children()) {
         if (Widget* cw = box->get_widget(); cw) {
@@ -47,77 +48,141 @@ void ScrollArea::draw_children(Widget* w) {
 void ScrollArea::draw(ncpp::Plane* p) {
 
     Widget::draw_children();
-    // p->set_scrolling(true);
-
-    // draw_children(content);
-    ncpp::Plane* pflattened = create_flat_merged_plane(content);
-
-    // int rows = p->get_dim_y();
-    // int cols = p->get_dim_y();
-    // for (int y = 0; y < rows; ++y) {
-    //     for (int x = 0; x < cols; ++x) {
-    //         ncpp::Cell cell;
-    //         pflattened->get_at(y+content_subwindow.y,
-    //                            x+content_subwindow.x,
-    //                            cell);
+    // // p->set_scrolling(true);
     //
-    //         p->set_channels(cell.get_channels());
-    //         // p->putc(cursory+y,cursorx+x,cell);
-    //         p->putc(y,x,cell);
-    //     }
-    // }
-    // pflattened->erase();
-    // pflattened->move(p->get_y(), p->get_x());
-    // pflattened->move(20,20);
-    // pflattened->move_bottom();
+    // draw_children(content);
+    // return;
+
+    log_debug("FLAT DRAW TEXTWIDGET---------------------");
+    if (!content) {
+        return;
+    }
+    content->pre_draw(content->get_plane());
+    content->draw(content->get_plane());
+    ncpp::Plane* pflattened = create_flat_merged_plane(content);
+    pflattened->move(0, 30);
+
+
+    // int y = 1;
+    // int x = 1;
+    // pflattened->translate(stdplane, &y, &x);
+    // pflattened->move(0,-10);
+    //
+
+    // ncpp::Plane* cpy = new ncpp::Plane(*pflattened);
+    // cpy->move(content->get_plane()->get_y(), content->get_plane()->get_x());
+
+    content->get_plane()->erase();
+    int rows = content->get_plane()->get_dim_y();
+    int cols = content->get_plane()->get_dim_y();
+    for (int y = 0; y < rows; ++y) {
+        for (int x = 0; x < cols; ++x) {
+            ncpp::Cell cell;
+            pflattened->get_at(y+content_subwindow.y,
+                               x+content_subwindow.x,
+                               cell);
+
+            // cell.set_bg_rgb8(0,0,0);
+            p->set_channels(cell.get_channels());
+            p->putc(y,x,cell);
+        }
+    }
     // delete pflattened;
 }
 
 ncpp::Plane* ScrollArea::create_flat_merged_plane(Widget* w) {
 
-    // return p;
+    ncpp::Plane* stdplane = ncpp::NotCurses::get_instance().get_stdplane();
 
     ncpp::Plane* p = new ncpp::Plane(*w->get_plane());
-    // p->reparent_family(w->get_plane());
-    // return p;
+    p->move(w->get_plane()->get_y(), w->get_plane()->get_x());
+    // p->reparent(w->get_plane()->get_parent());
 
     Rect wrect = w->get_geometry();
+    notcute::log_debug(fmt::format("FLAT {}, (w,h) = ({},{}), (y,x)=({},{})",
+                w->get_name(), wrect.width(), wrect.height(), wrect.y(), wrect.x()));
 
     const auto& children = w->get_layout()->get_children();
 
+    int y = w->get_plane()->get_y();
+    int x = w->get_plane()->get_x();
+    // int y = 0;//w->get_plane()->get_y();
+    // int x = 0;//w->get_plane()->get_x();
+    int by = y;
+    int bx = x;
+
+    int yabs,xabs;
+    ncplane_abs_yx(w->get_plane()->to_ncplane(), &yabs, &xabs);
+    // w->get_plane()->translate(p->get_parent(), &y,&x);
+
+    // p->translate(content->get_plane(), &yabs,&xabs);
+    // content->get_plane()->translate(p, &yabs,&xabs);
+
+    // p->translate(content->get_plane(), &y,&x);
+    // w->get_plane()->translate(p, &y,&x);
+
+    notcute::log_debug(fmt::format("TEXTWIDGET {}, BEFORE=({},{}), AFTER=({},{}) ABS=({},{})", 
+                w->get_name(), by, bx, y, x, yabs, xabs));
+
+    // ncplane_move_yx(stdplane->to_ncplane(), y, x);
+    // p->move(yabs, xabs);
+    // p->move_top();
+    // p->reparent_family(w->get_plane());
+
     // First resize the dupped plane to account for all the children
     // ACCOUNTING FOR VERTICAL ONLY
-    if (children.size() > 0) {
-        Widget* first  = children.front()->get_widget();
-        Widget* last  = children.back()->get_widget();
-
-        if (first && last) {
-            Rect r = last->get_geometry();
-            p->resize(
-                    r.bottom() - wrect.top(),
-                    wrect.right() - wrect.left()
-                    );
-        }
-        else {
-            log_debug("ERROR WITH SCROLL AREA FLATTEN");
-        }
-    }
-    p->resize_realign();
+    // if (children.size() > 0) {
+    //     Widget* first  = children.front()->get_widget();
+    //     Widget* last  = children.back()->get_widget();
+    //
+    //     if (first && last) {
+    //         Rect r = last->get_geometry();
+    //         int width = wrect.right()-wrect.left();
+    //         int height = r.bottom()-wrect.top();
+    //         p->resize(
+    //                 r.bottom() - wrect.top(),
+    //                 wrect.right() - wrect.left()
+    //                 );
+    //         notcute::log_debug(fmt::format("FLAT {}, (w,h) = ({},{}), (y,x)=({},{})",
+    //                     w->get_name(), width, height, wrect.y(), wrect.x()));
+    //     }
+    //     else {
+    //         log_debug("ERROR WITH SCROLL AREA FLATTEN");
+    //     }
+    // }
+    // else
+    // {
+    //     notcute::log_debug(fmt::format("FLAT NO RESIZE {}, (w,h) = ({},{}), (y,x)=({},{})", 
+    //                 w->get_name(), wrect.width(), wrect.height(), wrect.y(), wrect.x()));
+    // }
+    // p->resize_realign();
 
 
     for (BoxItem* box : w->get_layout()->get_children()) {
         if (Widget* cw = box->get_widget(); cw) {
             ncpp::Plane* cp = create_flat_merged_plane(cw); 
-            cp->mergedown_simple(p); 
-            // cp->move_top();
+            // cp->move_above(p);
 
+
+            // int fy = cp->get_y();
+            // int fx = cp->get_x();
+            // cp->get_parent()->translate_abs(&fy,&fx);
+            //
+            // notcute::log_debug(fmt::format("FLAT {}, BEFORE=({},{}), AFTER=({},{})", 
+            //             w->get_name(), cp->get_y(), cp->get_x(), fy, fx));
+            //
+            // cp->move(fy, fx);
+
+            cp->mergedown_simple(p); 
+
+            delete cp;
         }
     }
 
-    // int fy = p->get_y();
-    // int fx = p->get_x();
-    // get_plane()->translate_abs(&fy,&fx);
-    // p->move(fy, fx);
+    
+    // if (w->get_parent())
+    {
+    }
 
 
     return p;
