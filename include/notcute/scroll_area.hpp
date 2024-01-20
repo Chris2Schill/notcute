@@ -20,7 +20,7 @@ public:
         if (content) {
             set_content(content);
         }
-        get_plane()->set_bg_alpha(NCALPHA_OPAQUE);
+        // get_plane()->set_bg_alpha(NCALPHA_OPAQUE);
         set_focus_policy(FocusPolicy::FOCUS);
     }
     ~ScrollArea() {
@@ -32,23 +32,33 @@ public:
     ncpp::Plane* create_flat_merged_plane(Widget* p);
     // void draw_children(Widget* w);
 
+    virtual void draw_content(Widget* content) {
+        content->get_layout()->run_context();
+        content->pre_draw(content->get_plane());
+        content->draw(content->get_plane());
+    }
 
     void set_content(Widget* w) { 
         content = w;
 
-        // content->get_layout()->set_margins_ltrb(1,1,1,1);
-        // content->reparent(nullptr);
-        // // get_layout()->add_widget(content);
-        // get_layout()->add_widget(content);
-        // Rect r = get_geometry();
-        // content->get_plane()->move(r.y()+1, r.x()+1);
-        // content->get_layout()->set_behave(LAY_FILL);
+        // Move the content plane to the bottom of the pile
+        // even below top level widgets plane. The content
+        // widget and its children are rendered "offscreen"
+        // and then a specific subsection of that plane is
+        // copy-pastad onto the scroll areas plane. This is
+        // how we achieve the "window" effect where the plane
+        // of the scroll area seems to act as a "window" to the content
+        // thats "behind" it. The content plane is not actually moved
+        // around behind the scrollarea plane as we scroll.
         content->get_plane()->move_bottom();
 
         redraw();
-        // Rect rect = get_geometry();
-        // content->get_layout()->set_size(rect.rows(), rect.cols());
     }
+
+    // void redraw() override {
+    //     FrameWidget::redraw();
+    //     content->redraw();
+    // }
 
     // We don't want the up/down arrows to be consider part of the height calculations
     int ROWS_NOT_PART_OF_VISIBLE_HEIGHT = 2;
@@ -124,11 +134,11 @@ public:
             case 'h':
             case NCKEY_LEFT:
                 scroll_horizontally(-1);
-                break;
+                return true;
             case 'l':
             case NCKEY_RIGHT:
                 scroll_horizontally(1);
-                break;
+                return true;
             case 'j':
             case NCKEY_DOWN:
                 scroll_vertically(1);
@@ -138,13 +148,8 @@ public:
                 scroll_vertically(-1);
                 return true;
             default:
-                return false;
+                return FrameWidget::on_keyboard_event(e);
         }
-
-        // std::clamp(content_subwindow.y, 0, get_content_height()-get_scrollbar_row_count());
-        notcute::log_debug(fmt::format("SCROLL content_subwindow_yx=({},{})", content_subwindow.y, content_subwindow.x));
-
-        return false;
     }
 
     // void draw(ncpp::Plane* plane) override {
@@ -159,16 +164,18 @@ public:
     // }
 
     // Signals
-    boost::signals2::signal<void(int)> scrolled;
+    notcute::signal<void(int)> scrolled;
 
-private:
+protected:
+    Widget* content;
     struct {
         int y = 0;
         int x = 0;
     } content_subwindow;;
 
+
+private:
     int row_start = 0;
-    Widget* content;
 };
 
 }

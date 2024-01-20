@@ -47,20 +47,29 @@ namespace notcute{
 // }
 
 void ScrollArea::draw(ncpp::Plane* p) {
+    // FrameWidget::draw(p);
+    // return;
 
-    log_debug("FLAT DRAW TEXTWIDGET---------------------");
+    // log_debug("FLAT DRAW TEXTWIDGET----j----------------");
     if (!content) {
+        log_debug("SCROLL AREA CONTENT NULL");
         return;
     }
-    content->get_layout()->run_context();
-    content->pre_draw(content->get_plane());
-    content->draw(content->get_plane());
-    ncpp::Plane* pflattened = create_flat_merged_plane(content);
-    pflattened->move(0, 30);
 
-    content->get_plane()->erase();
+    // This resize might be causing problems for horizintal scrolling...
+    // I don't think this code is correct but it seems to fix the issue
+    // for listwidget content area filling the scroll area width
+    // at initialization...
+    Rect rect = get_geometry();
+    // content->get_plane()->resize(content->get_plane()->get_dim_y(), rect.cols());
+    content->get_plane()->resize(rect.rows(), rect.cols());
+
+    draw_content(content);
+
+    ncpp::Plane* pflattened = create_flat_merged_plane(content);
+
     int rows = content->get_plane()->get_dim_y();
-    int cols = content->get_plane()->get_dim_y();
+    int cols = content->get_plane()->get_dim_x();
     // int rows = p->get_dim_y();
     // int cols = p->get_dim_y();
     int yoffset = is_content_height_fully_visible() ? -1 : 1;
@@ -79,13 +88,12 @@ void ScrollArea::draw(ncpp::Plane* p) {
     }
     delete pflattened;
 
-    int content_height = content->get_plane()->get_dim_y();
-    int visible_height = p->get_dim_y();
-
-    notcute::log_debug(fmt::format("SCROLL content.height={}, scrollarea.height={}",
-                content_height,
-                visible_height
-                ));
+    // int content_height = content->get_plane()->get_dim_y();
+    // int visible_height = p->get_dim_y();
+    // notcute::log_debug(fmt::format("SCROLL content.height={}, scrollarea.height={}",
+    //             content_height,
+    //             visible_height
+    //             ));
 
 
     FrameWidget::draw(p);
@@ -93,13 +101,12 @@ void ScrollArea::draw(ncpp::Plane* p) {
     // draw vertical scrollbar
     if (!is_content_height_fully_visible()) {
         float pct_of_content_shown = get_pct_of_content_shown();
-        notcute::log_debug(fmt::format("SCROLL pct_of_content_shown={}", pct_of_content_shown));
+        // notcute::log_debug(fmt::format("SCROLL pct_of_content_shown={}", pct_of_content_shown));
 
         int scrollbar_rows = get_scrollbar_row_count();
-        notcute::log_debug(fmt::format("SCROLL scroll_bar_rows={}", scrollbar_rows));
+        // notcute::log_debug(fmt::format("SCROLL scroll_bar_rows={}", scrollbar_rows));
 
         int start_row = content_subwindow.y*get_pct_of_content_shown();
-
 
         // Arrows
         p->putstr(1,p->get_dim_x()-1, UP_ARROW.c_str());
