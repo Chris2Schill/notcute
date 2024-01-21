@@ -2,11 +2,9 @@
 
 #include <notcurses/notcurses.h>
 #include <ncpp/Visual.hh>
-#include <string>
 
 #include "frame_widget.hpp"
 #include "event_loop.hpp"
-#include "glyphs.hpp"
 
 namespace notcute {
 
