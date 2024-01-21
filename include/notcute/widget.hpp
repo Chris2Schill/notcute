@@ -27,46 +27,15 @@ enum class FocusPolicy {
     NO_FOCUS
 };
 
-inline void fill(ncpp::Plane* plane, const ncpp::Cell& c) {
-    plane->home();
-    Rect rect {
-        Point{
-            .x = plane->get_x(),
-            .y = plane->get_y(),
-        },
-        Size {
-            .width = plane->get_dim_x(),
-            .height = plane->get_dim_y(),
-        }
-    };
+// Fills all cells in a plane with cell c
+void fill(ncpp::Plane* plane, const ncpp::Cell& c);
 
-    for (int i = 0; i < rect.height(); i++) {
-        for (int j = 0; j < rect.width(); j++) {
-            plane->putc(i, j, c);
-        }
-    }
-}
+// Fills all cells in a plane with string c
+void fill(ncpp::Plane* plane, const std::string& c);
 
-inline void fill(ncpp::Plane* plane, const std::string& c) {
-    plane->erase();
-
-    Rect rect {
-        Point{
-            .x = plane->get_x(),
-            .y = plane->get_y(),
-        },
-        Size {
-            .width = plane->get_dim_x(),
-            .height = plane->get_dim_y(),
-        }
-    };
-
-    for (int i = 0; i < rect.height(); i++) {
-        for (int j = 0; j < rect.width(); j++) {
-            plane->putstr(i, j, c.c_str());
-        }
-    }
-}
+// Draws the coords relative to the widget in the
+// widgest frame
+void draw_coords(Widget* w);
 
 class Widget : public Object {
 public:
@@ -240,6 +209,47 @@ private:
     static std::unordered_map<ncpp::Plane*, std::string> plane_name_map;
     static Widget* focused_widget;
 };
+
+inline void fill(ncpp::Plane* plane, const ncpp::Cell& c) {
+    plane->home();
+    Rect rect {
+        Point{
+            .x = plane->get_x(),
+            .y = plane->get_y(),
+        },
+        Size {
+            .width = plane->get_dim_x(),
+            .height = plane->get_dim_y(),
+        }
+    };
+
+    for (int i = 0; i < rect.height(); i++) {
+        for (int j = 0; j < rect.width(); j++) {
+            plane->putc(i, j, c);
+        }
+    }
+}
+
+inline void fill(ncpp::Plane* plane, const std::string& c) {
+    plane->erase();
+
+    Rect rect {
+        Point{
+            .x = plane->get_x(),
+            .y = plane->get_y(),
+        },
+        Size {
+            .width = plane->get_dim_x(),
+            .height = plane->get_dim_y(),
+        }
+    };
+
+    for (int i = 0; i < rect.height(); i++) {
+        for (int j = 0; j < rect.width(); j++) {
+            plane->putstr(i, j, c.c_str());
+        }
+    }
+}
 
 inline void draw_coords(Widget* w) {
     Rect rect = w->get_layout()->get_rect();
