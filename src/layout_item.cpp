@@ -12,7 +12,7 @@ void WidgetItem::release_ownership() {
     wid = nullptr;
 }
 
-Box* WidgetItem::get_layout() {
+Layout* WidgetItem::get_layout() {
     return wid->get_layout();
 }
 

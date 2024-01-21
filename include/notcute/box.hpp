@@ -12,7 +12,7 @@ class Widget;
 class Box;
 class Spacer;
 
-class Box : public LayoutItem {
+class BoxLayout : public LayoutItem {
 public:
     struct Margins {
         int left;
@@ -21,9 +21,9 @@ public:
         int bottom;
     };
 
-    Box(int rows, int cols, Widget* parent = nullptr);
-    Box(Widget* parent = nullptr) : Box(1,1, parent) {}
-    ~Box();
+    BoxLayout(int rows, int cols, Widget* parent = nullptr);
+    BoxLayout(Widget* parent = nullptr) : BoxLayout(1,1, parent) {}
+    ~BoxLayout();
 
     // Add widget(s) to the layout. The layout will then
     // own the widget. Any widgets owned by the layout will be
@@ -81,15 +81,15 @@ public:
     virtual void post_run_context();
 
     // Used to tell if a LayoutItem is a Layout or not.
-    Box* get_layout() override { return this; }
+    Layout* get_layout() override { return this; }
 
     // Creates a Lay_Item for this layout. The created Lay_Item
     // will be a child of 'parent's Lay_Item
-    void create_layout_item(Box* parent);
+    void create_layout_item(BoxLayout* parent);
 
     // Will recreate the layout subtree and insert
     // it into the 'parent' view tree
-    void create_layout_item_subtree(Box* parent);
+    void create_layout_item_subtree(BoxLayout* parent);
 
     // Will destroy the layout subtree. Before the widget/layout
     // can be used again, create_layout_item_subtree must be called.
@@ -97,8 +97,8 @@ public:
     // take/add_widget functions call these appropriately
     void destroy_layout_item_subtree();
 
-    void insert_subtree_node(Box* node);
-    void remove_subtree_node(Box* node);
+    void insert_subtree_node(BoxLayout* node);
+    void remove_subtree_node(BoxLayout* node);
 
     // Called when the underlying lay_item view tree is
     // modified. Should update the layouts stored geometry
@@ -111,7 +111,7 @@ public:
     void rebuild_layout();
 
     // Returns the parent layout if it exists and nullptr otherwise.
-    Box* get_parent_layout();
+    BoxLayout* get_parent_layout();
 
     // Prints Debug information
     void print_view_tree_dimensions(int depth = 0);
@@ -138,11 +138,11 @@ private:
     Widget*               its_widget = nullptr;
 };
 
-class VBoxLayout : public Box {
+class VBoxLayout : public BoxLayout {
 public:
 
     VBoxLayout(int rows, int cols, Widget* parent = nullptr)
-        : Box(rows, cols, parent)
+        : BoxLayout(rows, cols, parent)
     {
         set_size(rows, cols);
         set_behave(LAY_FILL | LAY_CENTER);
@@ -155,10 +155,10 @@ public:
     }
 };
 
-class HBoxLayout : public Box {
+class HBoxLayout : public BoxLayout {
 public:
     HBoxLayout(int rows, int cols, Widget* parent = nullptr)
-        : Box(rows, cols, parent)
+        : BoxLayout(rows, cols, parent)
     {
         set_size(rows, cols);
         set_behave(LAY_FILL | LAY_CENTER);
@@ -170,13 +170,5 @@ public:
     {
     }
 };
-
-// For now all the only Layout type is BoxLayout
-// but in the future we could refactor to make a
-// generic Layout and have Box subclass Layout
-// to be able to provide other types of Layouts..
-// in theory. Might be tricky with how Notcurses is based
-// on 2D planes but I think its possible.
-using Layout = Box;
 
 }

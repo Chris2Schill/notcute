@@ -38,6 +38,26 @@ public:
         content->draw(content->get_plane());
     }
 
+    void draw_vertical_scrollbar(ncpp::Plane* p) {
+        if (!is_content_height_fully_visible()) {
+            float pct_of_content_shown = get_pct_of_content_shown();
+            // notcute::log_debug(fmt::format("SCROLL pct_of_content_shown={}", pct_of_content_shown));
+
+            int scrollbar_rows = get_scrollbar_row_count();
+            // notcute::log_debug(fmt::format("SCROLL scroll_bar_rows={}", scrollbar_rows));
+
+            int start_row = content_subwindow.y*get_pct_of_content_shown();
+
+            // Arrows
+            p->putstr(1,p->get_dim_x()-1, UP_ARROW.c_str());
+            p->putstr(p->get_dim_y()-ROWS_NOT_PART_OF_VISIBLE_HEIGHT,p->get_dim_x()-1, DOWN_ARROW.c_str());
+
+            for (int row = start_row+ROWS_NOT_PART_OF_VISIBLE_HEIGHT; row < scrollbar_rows+start_row; ++row) {
+                p->putstr(row,p->get_dim_x()-1, FULL_VERTICAL_BLOCK.c_str());
+            }
+        }
+    }
+
     void set_content(Widget* w) { 
         content = w;
 
@@ -55,10 +75,18 @@ public:
         redraw();
     }
 
-    // void redraw() override {
-    //     FrameWidget::redraw();
-    //     content->redraw();
-    // }
+    void draw_border(ncpp::Plane* p) override {
+        assert(p == get_plane());
+
+        FrameWidget::draw_border(p);
+        auto chans = p->get_channels();
+
+        set_fg_color({255,255,255,NCALPHA_OPAQUE});
+        set_bg_color(get_frame_bg());
+        draw_vertical_scrollbar(p);
+
+        p->set_channels(chans);
+    }
 
     // We don't want the up/down arrows to be consider part of the height calculations
     int ROWS_NOT_PART_OF_VISIBLE_HEIGHT = 2;

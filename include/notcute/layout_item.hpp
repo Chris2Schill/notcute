@@ -4,7 +4,8 @@
 namespace notcute {
 
 class Widget;
-class Box;
+class BoxLayout;
+using Layout = BoxLayout;
 
 class LayoutItem {
 public:
@@ -16,7 +17,7 @@ public:
 
     // Used to check if a LayoutItem is in fact
     // a Layout. 
-    virtual Box* get_layout() { return nullptr; }
+    virtual Layout* get_layout() { return nullptr; }
 
     // If this is called then, deletion
     // of the layout item should not cause
@@ -36,7 +37,7 @@ public:
 
     void release_ownership() override;
 
-    Box* get_layout() override;
+    Layout* get_layout() override;
 
 private:
     Widget* wid;

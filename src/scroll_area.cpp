@@ -6,80 +6,48 @@
 
 namespace notcute{
 
-// void ScrollArea::draw_children(Widget* w) {
-//
-//     ncpp::Plane* p = get_plane();
-//     int left_margin, top_margin, _;
-//     content->get_layout()->get_margins_ltrb(&left_margin, &top_margin, &_, &_);
-//
-//     int yoffset = content->get_geometry().y() - top_margin;
-//     int xoffset = content->get_geometry().x() - left_margin;
-//
-//     p->translate_abs(&yoffset,&xoffset);
-//
-//     for (BoxItem* box : w->get_layout()->get_children()) {
-//         if (Widget* cw = box->get_widget(); cw) {
-//             ncpp::Plane* cp = cw->get_plane();
-//
-//             Rect cprect = cw->get_geometry();
-//             p->translate_abs(&cprect.m_pos.y, &cprect.m_pos.x);
-//
-//             int cursory = cprect.y()-yoffset;
-//             int cursorx = cprect.x()+xoffset;
-//
-//             cursory -= content_subwindow.y;
-//             cursorx -= content_subwindow.x;
-//
-//             p->cursor_move(cursory,cursorx);
-//             for (int y = 0; y < cp->get_dim_y(); ++y) {
-//                 for (int x = 0; x < cp->get_dim_x(); ++x) {
-//                     ncpp::Cell cell;
-//                     cp->get_at(y,x,cell);
-//
-//                     p->set_channels(cell.get_channels());
-//                     p->putc(cursory+y,cursorx+x,cell);
-//                 }
-//             }
-//             draw_children(cw);
-//         }
-//     }
-//
-// }
+// TODO: Why does setting ncpp::Plane::set_scrolling(true) on a widget in the
+// 'content' widget cause a crash? Does set_scrolling invalidate the original plane?
 
 void ScrollArea::draw(ncpp::Plane* p) {
-    // FrameWidget::draw(p);
-    // return;
-
-    // log_debug("FLAT DRAW TEXTWIDGET----j----------------");
     if (!content) {
         log_debug("SCROLL AREA CONTENT NULL");
         return;
     }
 
-    // This resize might be causing problems for horizintal scrolling...
-    // I don't think this code is correct but it seems to fix the issue
-    // for listwidget content area filling the scroll area width
-    // at initialization...
-    Rect rect = get_geometry();
-    // content->get_plane()->resize(content->get_plane()->get_dim_y(), rect.cols());
-    content->get_plane()->resize(rect.rows(), rect.cols());
+    // Not excatly sure if this is the best place for this but..
+    // when taking/adding the scroll area from a layout, its possible
+    // that the 'content' can end up above the scroll areas visible plane
+    // on the z-axis. So force it below (again) here..
+    content->get_plane()->move_bottom();
 
+    // Draws the content area plane. content should be an 
+    // "offscreen" widget.
     draw_content(content);
 
+    // Preserve then channels that are already on the plane
+    uint64_t chans = p->get_channels();
+
+    // Renders the 'content' widget (and all of its children)
+    // to a singular plane containing the contents of
+    // the 'content' widget as if it had been rendered to the screen
     ncpp::Plane* pflattened = create_flat_merged_plane(content);
 
-    int rows = content->get_plane()->get_dim_y();
-    int cols = content->get_plane()->get_dim_x();
-    // int rows = p->get_dim_y();
-    // int cols = p->get_dim_y();
-    int yoffset = is_content_height_fully_visible() ? -1 : 1;
-    int xoffset = is_content_width_fully_visible() ? -1 : 1;
-
-    for (int y = 1; y < rows-yoffset; ++y) {
-        for (int x = 1; x < cols-xoffset; ++x) {
+    // Copy a subsection of 'pflattened' to the actually visible
+    // scroll area plane 'p'. Doing this on a per cell basis
+    // because that was the only way I knew to capture both the glyphs
+    // and the ncchannel of each cell individually.
+    // Note: After coding this I discovered ncplane_render_buffer
+    // which may be a more efficient/easier way of doing this.
+    Rect r = get_geometry();
+    int rows = r.rows();
+    int cols = r.cols();
+    // 1 -> n-1 due to forced borders of scroll area
+    for (int y = 1; y < rows-1; ++y) {
+        for (int x = 1; x < cols-1; ++x) {
             ncpp::Cell cell;
-            pflattened->get_at(y+content_subwindow.y-1,
-                               x+content_subwindow.x-1,
+            pflattened->get_at(content_subwindow.y+(y-1),
+                               content_subwindow.x+(x-1),
                                cell);
 
             p->set_channels(cell.get_channels());
@@ -88,42 +56,21 @@ void ScrollArea::draw(ncpp::Plane* p) {
     }
     delete pflattened;
 
-    // int content_height = content->get_plane()->get_dim_y();
-    // int visible_height = p->get_dim_y();
-    // notcute::log_debug(fmt::format("SCROLL content.height={}, scrollarea.height={}",
-    //             content_height,
-    //             visible_height
-    //             ));
-
+    // Restore the planes channels
+    p->set_channels(chans);
 
     FrameWidget::draw(p);
-
-    // draw vertical scrollbar
-    if (!is_content_height_fully_visible()) {
-        float pct_of_content_shown = get_pct_of_content_shown();
-        // notcute::log_debug(fmt::format("SCROLL pct_of_content_shown={}", pct_of_content_shown));
-
-        int scrollbar_rows = get_scrollbar_row_count();
-        // notcute::log_debug(fmt::format("SCROLL scroll_bar_rows={}", scrollbar_rows));
-
-        int start_row = content_subwindow.y*get_pct_of_content_shown();
-
-        // Arrows
-        p->putstr(1,p->get_dim_x()-1, UP_ARROW.c_str());
-        p->putstr(p->get_dim_y()-ROWS_NOT_PART_OF_VISIBLE_HEIGHT,p->get_dim_x()-1, DOWN_ARROW.c_str());
-
-        for (int row = start_row+ROWS_NOT_PART_OF_VISIBLE_HEIGHT; row < scrollbar_rows+start_row; ++row) {
-            p->putstr(row,p->get_dim_x()-1, FULL_VERTICAL_BLOCK.c_str());
-        }
-    }
 }
 
+// Recursively traverses the view tree to create a singular
+// plane containing the contents of all the Widget 'w's
+// plane and its childrens planes
 ncpp::Plane* ScrollArea::create_flat_merged_plane(Widget* w) {
 
     ncpp::Plane* p = new ncpp::Plane(*w->get_plane());
     p->move(w->get_plane()->get_y(), w->get_plane()->get_x());
 
-    for (BoxItem* box : w->get_layout()->get_children()) {
+    for (LayoutItem* box : w->get_layout()->get_children()) {
         if (Widget* cw = box->get_widget(); cw) {
             ncpp::Plane* cp = create_flat_merged_plane(cw); 
             cp->mergedown_simple(p); 
@@ -133,8 +80,6 @@ ncpp::Plane* ScrollArea::create_flat_merged_plane(Widget* w) {
 
     return p;
 }
-
-
 
 void ScrollArea::draw2(ncpp::Plane* p) {
     // draw_children();

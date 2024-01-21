@@ -18,7 +18,7 @@ void print(std::string name, Rect rect) {
 };
 
 
-ncpp::Plane* from_box(Box* box) {
+ncpp::Plane* from_box(BoxLayout* box) {
     Rect r = box->get_rect();
     return new ncpp::Plane(r.height(), r.width(), r.y(), r.x());
 }
@@ -44,7 +44,7 @@ ncpp::Plane* from_box(Box* box) {
 //     }
 // }
 
-void draw(Box* b, ncpp::Plane* p, const std::string& c) {
+void draw(BoxLayout* b, ncpp::Plane* p, const std::string& c) {
     Rect r = b->get_rect();
     p->resize(r.height(), r.width());
     p->move(r.y(), r.x());
@@ -180,18 +180,18 @@ int main() {
 //     ncpp::NotCurses nc;
 //     unsigned rows, cols;
 //     nc.get_term_dim(&rows, &cols);
-//     Box* root2 = new Box(rows, cols);
-//     // Box* root2 = new Box(1280,800);
+//     BoxLayout* root2 = new Box(rows, cols);
+//     // BoxLayout* root2 = new Box(1280,800);
 //     root2->set_contain(LAY_ROW);
 //
-//     Box* mlist = new Box(20, 60, root2);
-//     Box* mcontents = new Box(1,1, root2);
+//     BoxLayout* mlist = new Box(20, 60, root2);
+//     BoxLayout* mcontents = new Box(1,1, root2);
 //
-//     Box* mlist_i1 = new Box(20, 20, mlist);
+//     BoxLayout* mlist_i1 = new Box(20, 20, mlist);
 //     mlist_i1->set_behave(LAY_FILL);
-//     Box* mlist_i2 = new Box(20, 20, mlist);
+//     BoxLayout* mlist_i2 = new Box(20, 20, mlist);
 //     mlist_i2->set_behave(LAY_FILL);
-//     Box* mlist_i3 = new Box(20, 20, mlist);
+//     BoxLayout* mlist_i3 = new Box(20, 20, mlist);
 //     mlist_i3->set_behave(LAY_FILL);
 //
 //

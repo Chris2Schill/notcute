@@ -6,7 +6,7 @@
 namespace notcute {
 
 
-Box::Box(int rows, int cols, Widget* parent) {
+BoxLayout::BoxLayout(int rows, int cols, Widget* parent) {
     set_size(rows, cols);
     if (parent) {
         set_widget(parent);
@@ -14,7 +14,7 @@ Box::Box(int rows, int cols, Widget* parent) {
     }
 }
 
-Box::~Box() {
+BoxLayout::~BoxLayout() {
 
     log_debug(fmt::format("deleting {}s box", get_widget()->get_name()));
     for (LayoutItem* item : children) {
@@ -24,7 +24,7 @@ Box::~Box() {
     delete layout_item;
 }
 
-void Box::add_widget(Widget* widget) {
+void BoxLayout::add_widget(Widget* widget) {
     assert(widget != nullptr);
 
     widget->reparent(get_widget());
@@ -35,13 +35,13 @@ void Box::add_widget(Widget* widget) {
     invalidate();
 }
 
-void Box::add_widgets(std::vector<notcute::Widget*> ws) {
+void BoxLayout::add_widgets(std::vector<notcute::Widget*> ws) {
     for (auto& w : ws) {
         add_widget(w);
     }
 }
 
-Widget* Box::take(Widget* w) {
+Widget* BoxLayout::take(Widget* w) {
     Widget *taken = nullptr;
     children.erase(
             std::remove_if(
@@ -66,13 +66,13 @@ Widget* Box::take(Widget* w) {
     return taken;
 }
 
-Spacer* Box::add_spacer() {
+Spacer* BoxLayout::add_spacer() {
     auto spacer = new Spacer(get_widget());
     add_widget(new Spacer);
     return spacer;
 }
 
-void Box::set_contain(int flags) {
+void BoxLayout::set_contain(int flags) {
     contain_flags = flags;
     if (layout_item) {
         layout_item->set_contain(flags);
@@ -82,7 +82,7 @@ void Box::set_contain(int flags) {
     }
 }
 
-void Box::set_behave(int flags) {
+void BoxLayout::set_behave(int flags) {
     behave_flags = flags;
     if (layout_item) {
         layout_item->set_behave(flags);
@@ -92,7 +92,7 @@ void Box::set_behave(int flags) {
     }
 }
 
-void Box::set_size(int rows, int cols) {
+void BoxLayout::set_size(int rows, int cols) {
     rect.set_height(rows);
     rect.set_width(cols);
 
@@ -101,23 +101,23 @@ void Box::set_size(int rows, int cols) {
     }
 }
 
-void Box::set_width(int cols) {
+void BoxLayout::set_width(int cols) {
     set_size(rect.rows(), cols);
 }
 
-void Box::set_height(int rows) {
+void BoxLayout::set_height(int rows) {
     set_size(rows, rect.cols());
 }
 
-Rect Box::get_rect() {
+Rect BoxLayout::get_rect() {
     return rect;
 }
 
-Widget* Box::get_widget() {
+Widget* BoxLayout::get_widget() {
     return its_widget;
 }
 
-void Box::set_margins_ltrb(int left, int top, int right, int bottom) {
+void BoxLayout::set_margins_ltrb(int left, int top, int right, int bottom) {
     margins = {
         .left = left,
         .top = top,
@@ -133,7 +133,7 @@ void Box::set_margins_ltrb(int left, int top, int right, int bottom) {
     }
 }
 
-void Box::get_margins_ltrb(int* left, int* top, int* right, int* bottom) {
+void BoxLayout::get_margins_ltrb(int* left, int* top, int* right, int* bottom) {
     if (layout_item) {
         lay_scalar l, t, r, b;
         layout_item->get_margins_ltrb(&l, &t, &r, &b);
@@ -147,11 +147,11 @@ void Box::get_margins_ltrb(int* left, int* top, int* right, int* bottom) {
     }
 }
 
-const std::vector<LayoutItem*>& Box::get_children() const {
+const std::vector<LayoutItem*>& BoxLayout::get_children() const {
     return children;
 }
 
-void Box::create_layout_item(Box* parent = nullptr) {
+void BoxLayout::create_layout_item(BoxLayout* parent = nullptr) {
     if (layout_item) {
         delete layout_item;
     }
@@ -164,7 +164,7 @@ void Box::create_layout_item(Box* parent = nullptr) {
     }
 }
 
-Box* Box::get_parent_layout() {
+BoxLayout* BoxLayout::get_parent_layout() {
     Widget* w = get_widget();
     if (!w) { return nullptr; }
 
@@ -174,7 +174,7 @@ Box* Box::get_parent_layout() {
     return pw->get_layout();
 }
 
-void Box::create_layout_item_subtree(Box* parent) {
+void BoxLayout::create_layout_item_subtree(BoxLayout* parent) {
     create_layout_item(parent);
     // log_debug(fmt::format("recreated lay_item: id = {}", layout_item->id));
 
@@ -184,16 +184,16 @@ void Box::create_layout_item_subtree(Box* parent) {
     }
 
     for (LayoutItem* child : children) {
-        if (Box* cb = child->get_layout(); cb) {
+        if (BoxLayout* cb = child->get_layout(); cb) {
             cb->create_layout_item_subtree(this);
         }
     }
 }
 
-void Box::destroy_layout_item_subtree() {
+void BoxLayout::destroy_layout_item_subtree() {
     // Delete the widgets Lay_Item and and all of its childrens as well
     for (LayoutItem* child : children) {
-        if (Box* b = child->get_layout(); b) {
+        if (BoxLayout* b = child->get_layout(); b) {
             b->destroy_layout_item_subtree();
         }
     }
@@ -202,20 +202,20 @@ void Box::destroy_layout_item_subtree() {
     layout_item = nullptr;
 }
 
-void Box::insert_subtree_node(Box* node) {
+void BoxLayout::insert_subtree_node(BoxLayout* node) {
     assert(node != nullptr);
     node->destroy_layout_item_subtree();
     node->create_layout_item_subtree(this);
 }
 
-void Box::remove_subtree_node(Box* node) {
+void BoxLayout::remove_subtree_node(BoxLayout* node) {
     node->destroy_layout_item_subtree();
     node->get_widget()->reparent(nullptr);
     node->create_layout_item_subtree(nullptr); // nullptr parents means make this subtree now a standlone tree with node as the root
     rebuild_layout();
 }
 
-void Box::invalidate(bool send_resize) {
+void BoxLayout::invalidate(bool send_resize) {
     log_debug("invalidate() " + get_widget()->get_name());
     layout_item->set_size(rect.rows(), rect.cols());
     layout_item->set_margins_ltrb(margins.left, margins.top, margins.right, margins.bottom);
@@ -223,7 +223,7 @@ void Box::invalidate(bool send_resize) {
     layout_item->set_behave(behave_flags);
 
     for (LayoutItem* child : children) {
-        if (Box* b = child->get_layout(); b) {
+        if (BoxLayout* b = child->get_layout(); b) {
             b->invalidate(false);
         }
     }
@@ -234,15 +234,15 @@ void Box::invalidate(bool send_resize) {
     get_widget()->redraw();// TODO: needed? or just fix resize
 }
 
-void Box::rebuild_layout() {
+void BoxLayout::rebuild_layout() {
     Widget* top_level = its_widget->get_top_level_widget();
-    Box* layout = top_level->get_layout();
+    BoxLayout* layout = top_level->get_layout();
     layout->destroy_layout_item_subtree();
     layout->create_layout_item_subtree(nullptr);
     layout->invalidate();
 }
 
-void Box::run_context() {
+void BoxLayout::run_context() {
     if (layout_item) {
         layout_item->run_context();
         post_run_context();
@@ -252,7 +252,7 @@ void Box::run_context() {
     }
 }
 
-void Box::post_run_context() {
+void BoxLayout::post_run_context() {
     if (layout_item) {
         lay_vec4 dim = layout_item->get_rect();
         rect.set_left(dim[0]);
@@ -262,13 +262,13 @@ void Box::post_run_context() {
     }
 
     for (LayoutItem* child : children) {
-        if (Box* b = child->get_layout(); b) {
+        if (BoxLayout* b = child->get_layout(); b) {
             b->post_run_context();
         }
     }
 }
 
-void Box::print_view_tree_dimensions(int depth) {
+void BoxLayout::print_view_tree_dimensions(int depth) {
     std::stringstream ss;
     for (int i = 0; i < depth; ++i) {
         ss << " |";
@@ -286,13 +286,13 @@ void Box::print_view_tree_dimensions(int depth) {
     notcute::log_debug(ss.str());
 
     for (LayoutItem* child : get_children()) {
-        if (Box* l = child->get_layout(); l) {
+        if (BoxLayout* l = child->get_layout(); l) {
             l->print_view_tree_dimensions(depth+1);
         }
     }
 }
 
-void Box::update_box() {
+void BoxLayout::update_box() {
     // TODO: update_box does not need to happen until a redraw/resize event.
     // Currently is happens on every insertion/deletion of a view tree
     // log_debug("update_box() " + get_widget()->get_name());
@@ -304,7 +304,7 @@ void Box::update_box() {
         };
 
         for (LayoutItem* child : children) {
-            if (Box* b = child->get_layout(); b) {
+            if (BoxLayout* b = child->get_layout(); b) {
                 b->update_box();
             }
         }
