@@ -21,7 +21,7 @@ find_package(spdlog REQUIRED)
 
 set(SOURCES
     src/widget.cpp
-    src/box.cpp
+    src/box_layout.cpp
     src/layout.cpp
     src/layout_item.cpp
     src/event_loop.cpp

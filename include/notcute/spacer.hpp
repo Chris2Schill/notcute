@@ -1,7 +1,7 @@
 #pragma once
 
 #include "widget.hpp"
-#include "box.hpp"
+#include "box_layout.hpp"
 
 namespace notcute {
 

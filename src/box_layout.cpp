@@ -1,4 +1,5 @@
-#include <notcute/box.hpp>
+#include <notcute/box_layout.hpp>
+
 #include <notcute/widget.hpp>
 #include <notcute/event_loop.hpp>
 #include <notcute/spacer.hpp>

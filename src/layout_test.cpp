@@ -3,7 +3,7 @@
 
 #include <notcute/layout.hpp>
 #include <notcute/renderer.hpp>
-#include <notcute/box.hpp>
+#include <notcute/box_layout.hpp>
 #include <notcute/logger.hpp>
 #include <notcute/text_widget.hpp>
 #include <notcute/frame_widget.hpp>

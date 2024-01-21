@@ -3,7 +3,7 @@
 #include <boost/signals2.hpp>
 #include <notcurses/notcurses.h>
 #include "object.hpp"
-#include "box.hpp"
+#include "layout.hpp"
 #include "rect.hpp"
 #include "colors.hpp"
 

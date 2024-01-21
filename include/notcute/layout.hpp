@@ -12,4 +12,4 @@ namespace notcute {
     using Layout = BoxLayout;
 }
 
-#include "box.hpp"
+#include "box_layout.hpp"
