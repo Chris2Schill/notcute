@@ -9,16 +9,15 @@ void EventLoop::process_events() {
         auto [event, err] = events.read();
         if (err) { break; }
 
-
-
         // If the event has a sender, deliver it directly to it
         // This is used for view subtree updating
         else if (event->get_sender()) {
-            if(event->get_type() == Event::DELETE_LATER) {
-                delete event->get_sender();
-            }
-            else {
-                event->get_sender()->on_event(event);
+            switch(event->get_type()) {
+                case Event::DELETE_LATER:
+                    delete event->get_sender();
+                    break;
+                default:
+                    event->get_sender()->on_event(event);
             }
         }
 

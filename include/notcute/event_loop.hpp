@@ -1,11 +1,9 @@
 #pragma once
 
-#include <queue>
 #include <functional>
 #include <cstdint>
 #include <ncpp/NotCurses.hh>
 #include "util.hpp"
-#include "rect.hpp"
 
 namespace notcute {
 
@@ -19,6 +17,7 @@ public:
         RESIZE,
         KEYBOARD_EVENT,
         MOUSE_EVENT,
+        DELETE_LATER,
 
         USER_EVENT,
     };
