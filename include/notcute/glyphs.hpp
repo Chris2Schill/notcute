@@ -9,4 +9,7 @@ inline static const std::string DOWN_ARROW ="▼";
 // inline static const std::string FULL_VERTICAL_BLOCK = "▮";
 inline static const std::string FULL_VERTICAL_BLOCK = "█";
 
+static const std::string TEXT_EDITOR_TEXT = "▀█▀ ██▀ ▀▄▀ ▀█▀   ██▀ █▀▄ █ ▀█▀ ▄▀▄ █▀▄"
+                                            " █  █▄▄ █ █  █    █▄▄ █▄▀ █  █  ▀▄▀ █▀▄";
+
 }
