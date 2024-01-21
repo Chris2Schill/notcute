@@ -5,6 +5,7 @@
 #include "object.hpp"
 #include "box.hpp"
 #include "rect.hpp"
+#include "colors.hpp"
 
 namespace notcute {
 
@@ -25,12 +26,6 @@ enum class FocusPolicy {
     FOCUS,
     NO_FOCUS
 };
-
-inline uint64_t RGB(int r, int g, int b) {
-    ncpp::Cell c(' ');
-    c.set_fg_rgb8(r,g,b);
-    return c.get_channels();
-}
 
 inline void fill(ncpp::Plane* plane, const ncpp::Cell& c) {
     plane->home();
@@ -84,194 +79,164 @@ public:
         delete plane;
     }
 
+    // Starts a render/event loop for this widget.
+    // If a ncpp::Pile has not been created for this
+    // widget yet, one will be created. Only one
+    // ncpp::Pile can be rendered to the screen at a time
+    // so calling show on a widget 
+    void show();
+
+    // Will end the render/event loop for this widget
+    void done_showing();
+
+    // Sets the layout of the widget.
     virtual void set_layout(Box* layout);
-    void    show();
 
-    void debug_set_plane_color(int r, int g, int b) {
-        ncpp::Cell c(' ');
-        c.set_bg_rgb8(r,g,b);
-        // c.set_fg_rgb8(r,g,b);
-        plane->set_base_cell(c);
-        redraw();
-    }
+    // Note for pre_draw and draw()
+    // For all internal uses, the widgets own plane is passed as
+    // the param, but it takes a ncpp::Plane* as param to allow
+    // for a widget to draw its contents to anothers
+    // for some fancyschmance drawing in application code
 
-    virtual void pre_draw(ncpp::Plane* plane) {
-        plane->erase();
+    // Positions and resizes the owned ncpp::Plane according
+    // to the box layout model.
+    // Recursively pre_draws all child widget's planes.
+    // Used internally and should not need to be called
+    // directly for most use cases.
+    virtual void pre_draw(ncpp::Plane* plane);
 
-        // To ease implementation of scroll area
-        // we fill the plane with spaces. TODO:
-        // remove this crutch
-        // ncpp::Cell c;
-        // plane->get_base(c);
-        // fill(plane, c);
-        // plane->home();
+    // Does the actual draws to the plane. Recursively
+    // draws all child widgets plans as well.
+    // for some fancyschmance drawing
+    virtual void draw(ncpp::Plane* plane);
 
-        int left = 0, top = 0, right = 0, bottom = 0;
-        Rect rect = box->get_rect();
-
-        // If we are nested inside of a child widget other than the top level widget
-        // then we must translate the relative coords to global coords for positioning
-        if (parent) {
-            parent->get_layout()->get_margins_ltrb(&left, &top, &right, &bottom);
-            parent->get_plane()->translate_abs(&rect.m_pos.y, &rect.m_pos.x);
-        }
-
-        plane->resize(rect.height(), rect.width());
-        plane->move(rect.y(), rect.x());
-        plane->resize_realign();
-
-        if (Box* layout = get_layout(); layout) {
-            for (BoxItem* item : box->get_children()) {
-                if (Widget* w = item->get_widget(); w) {
-                    w->pre_draw(w->get_plane());
-                }
-            }
-        }
-    }
-
+    // Schedules a redraw event for this widget that will
+    // happen in the next pump of the eventloop  
     virtual void redraw();
 
+    // Scheduls a redraw for the top level widget of the view tree,
+    // effectively redrawing all widget
+    // TODO: This seems like a crutch. reevaluate the need for this.
+    void redraw_all();
+
+    // Gets the associated ncpp::Plane for this widget.
+    // Every widget has a plane.
+    ncpp::Plane* get_plane();
+
+    // Returns the widget's layout if one exists and
+    // nullptr otherwise
+    Box* get_layout();
+
+    // Gets the parent widget, will be nullptr for a top_level
+    // widget
+    Widget* get_parent();
+
+    // Reparent this widget's plane and all planes bound to
+    // this widget's plane to the plane owned by 'new_parent'.
+    // This is used internally and most application code
+    // should not need to call this directly
+    void reparent(Widget* new_parent);
+
+    // Event handling
     bool on_event_start(Event* e);
-
-    virtual void draw(ncpp::Plane* plane) {
-        draw_children();
-    }
-
-    bool is_focused() {
-        return focused_widget == this;
-    }
-
-    void draw_children();
-
-    void done_showing() {
-        is_showing = false;
-    }
-    
-    void reparent(Widget* new_parent) {
-        parent = new_parent;
-        if (new_parent) {
-            plane->reparent_family(new_parent->plane);
-        }
-        else {
-            plane->reparent_family((ncpp::Plane*)nullptr);
-        }
-    }
-
-    void set_name(const std::string& name) {
-        plane_name_map[plane] = name;
-    }
-
-    const std::string& get_name() const {
-        static const std::string NO_NAME = "(no_name)";
-        const std::string& name = plane_name_map[plane];
-        return name.empty() ? NO_NAME : name;
-    }
-
-    // void create_layout_item() {
-    //     if (box->layout_item) {
-    //         delete box->layout_item;
-    //     }
-    //
-    //     if (parent) {
-    //         box->layout_item = new Lay_Item(*parent->get_layout()->layout_item);
-    //     }
-    //     else {
-    //         box->layout_item = new Lay_Item(box->rect.rows(), box->rect.cols());
-    //         layout_ctx_map[this] = box->layout_item->get_context();
-    //     }
-    // }
-
-    ncpp::Plane* get_plane() { return plane; }
-
-    Box* get_layout() { return box; }
-
-    virtual void set_geometry(const Rect& rect);
-
     virtual bool on_event(Event* e);
     virtual bool on_draw_event(DrawEvent* e);
     virtual bool on_keyboard_event(KeyboardEvent* e);
     virtual bool on_resize_event(Event* e);
 
-    static ncplane_options& default_options() {
-        auto& nc = ncpp::NotCurses::get_instance();
-        unsigned rows, cols;
-        nc.get_term_dim(&rows, &cols);
+    // Virtual getter for a string representation of a widget
+    virtual std::string to_string() const;
 
-        static ncplane_options opts = {
-            .y = 0,
-            .x = 0,
-            .rows = 1,
-            .cols = 1,
-        };
+    // FocusPolicy::FOCUS means the widget can take
+    // input focus events.
+    // FocusPolicy::NOFOCUS means it will ignore any attempts
+    // for it to take focus
+    void set_focus_policy(FocusPolicy fp);
+    FocusPolicy get_focus_policy() const;
 
-        return opts;
-    }
+    // Attempts to set the widget as the "focused_widget".
+    // see Widget::get_focused_widget()
+    void set_focus();
 
-    Widget* get_parent() { return parent; }
+    // Returns if this widget is the "focused_widget"
+    bool is_focused();
 
-    virtual std::string to_string() const {
-        return "Widget " + get_name();
-    }
+    // Updates the layout geometry. Remember that if a widget's
+    // layout has set_behave() of LAY_FILL of any kind, then
+    // changes here will get overwritten by the box model
+    virtual void set_geometry(const Rect& rect);
+    Rect get_geometry();
 
-    void set_focus() {
-        if (focus_policy == FocusPolicy::FOCUS) {
-            if (focused_widget != this) {
-                Widget* prev_focused_widget = focused_widget;
-                focused_widget = this;
+    // A widget can be top level if is created without a parent,
+    // or if it was take()n from its owning layout.
+    bool is_top_level() const;
 
-                if (prev_focused_widget) {
-                    prev_focused_widget->focus_state_changed(false);
-                }
+    // Traverses the up view tree to find the top level 
+    // widget (one that does not have a parent and thus
+    // probably has an associated ncpp::Pile if is the one
+    // beign shown)
+    Widget* get_top_level_widget();
 
-                focused_widget->focus_state_changed(true);
-            }
-        }
-        else {
-            log_debug(fmt::format("Tried to set focus on {} but focus policy is NO_FOCUS", get_name()));
-        }
-    }
+    // A convenience take function so applicationc ode
+    // does not have to specify a parent. Only use if you are
+    // 100% sure the widget has a parent and is in a layout or
+    // else it will assert false
+    Widget* take();
 
-    FocusPolicy get_focus_policy() const {
-        return focus_policy;
-    }
+    // Schedules the widget to be deleted at a later time.
+    // Only use if you are 100% sure the widget does not have
+    // a parent and is not in a layout
+    void delete_later();
 
-    void set_focus_policy(FocusPolicy fp) {
-        focus_policy = fp;
-    }
+    // Convenience function for the common(?)
+    // take(); delete_later();
+    // Maybe I'll remove this
+    void take_and_delete_later();
 
-    static Widget*& get_focused_widget() {
-        return focused_widget;
-    }
+    // Helper methods to set the planes foreground/background
+    // color. TODO: verify that ncpp::Plane::set_fg_rgb
+    // is working correctly for channels with alpha bits set.
+    // (I don't think it is, and is why I use ncpp::Plane::set_channels()
+    // but I would like these to work)
+    void set_fg_color(Color c);
+    void set_bg_color(Color c);
 
+    // Currently theres no internal usage of a widgets name
+    // other than for debugging
+    void set_name(const std::string& name);
+    const std::string& get_name() const;
 
-    Rect get_geometry() {
-        return get_layout()->get_rect();
-    }
+    // Used for debugging. Maybe this should be changed
+    // to set_base_cell, but I am trying to limit the
+    // exposure of the Notcurses api.
+    void debug_set_plane_color(int r, int g, int b);
 
-    bool is_top_level() {
-        return get_parent() == nullptr;
-    }
-
-    Widget* get_top_level_widget() {
-        Widget* w = this;
-        while (!w->is_top_level()) {
-            w = w->get_parent();
-        }
-        return w;
-    }
-
+    // Signals
     signal<void(bool)> focus_state_changed;
 
+    // Only one widget can have focus at a time, i.e
+    // the "focused_widget". Focus heirarchies that
+    // provide control flow between widgets can be done
+    // using the FocusStack with one or more FocusNode graphs
+    static Widget*& get_focused_widget();
+
+    static ncplane_options& default_options();
 
 protected:
+
+    // Draws the widgts children. Used in draw()
+    // to recursively draw the view tree
+    void draw_children();
+
     ncpp::Plane* plane = nullptr;
+
+
 private:
     Box*         box = nullptr;
     Widget*      parent = nullptr;
     bool         is_showing = false; //not to be confused with a visible widget
     FocusPolicy  focus_policy = FocusPolicy::NO_FOCUS;
     bool         dirty = false;
-    // int          fg_pal_index = 0;
     static std::unordered_map<ncpp::Plane*, std::string> plane_name_map;
     static Widget* focused_widget;
 };
