@@ -23,27 +23,6 @@ ncpp::Plane* from_box(BoxLayout* box) {
     return new ncpp::Plane(r.height(), r.width(), r.y(), r.x());
 }
 
-// void fill(ncpp::Plane* plane, std::string c) {
-//     plane->erase();
-//
-//     Rect rect {
-//         Point{
-//             .x = plane->get_x(),
-//             .y = plane->get_y(),
-//         },
-//         Size {
-//             .width = plane->get_dim_x(),
-//             .height = plane->get_dim_y(),
-//         }
-//     };
-//
-//     for (int i = 0; i < rect.height(); i++) {
-//         for (int j = 0; j < rect.width(); j++) {
-//             plane->putstr(i, j, c.c_str());
-//         }
-//     }
-// }
-
 void draw(BoxLayout* b, ncpp::Plane* p, const std::string& c) {
     Rect r = b->get_rect();
     p->resize(r.height(), r.width());
