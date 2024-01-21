@@ -68,10 +68,9 @@ void Widget::done_showing() {
     is_showing = false;
 }
 
-void Widget::set_layout(Box* layout) {
-    this->box = layout;
+void Widget::set_layout(Layout* layout) {
+    this->layout = layout;
     layout->set_widget(this);
-    layout->set_enabled(layout->is_top_most_enabled());
     layout->create_layout_item(nullptr);
 }
 
@@ -80,7 +79,7 @@ void Widget::pre_draw(ncpp::Plane* plane) {
 
     //Note: Margins are already accounted for by the box model
 
-    Rect rect = box->get_rect();
+    Rect rect = layout->get_rect();
 
     // If we are nested inside of a child widget other than the top level widget
     // then we must translate the relative coords to global coords for positioning
@@ -92,8 +91,8 @@ void Widget::pre_draw(ncpp::Plane* plane) {
     plane->move(rect.y(), rect.x());
     plane->resize_realign();
 
-    if (Box* layout = get_layout(); layout) {
-        for (BoxItem* item : box->get_children()) {
+    if (layout) {
+        for (LayoutItem* item : layout->get_children()) {
             if (Widget* w = item->get_widget(); w) {
                 w->pre_draw(w->get_plane());
             }
@@ -121,8 +120,8 @@ ncpp::Plane* Widget::get_plane() {
     return plane;
 }
 
-Box* Widget::get_layout() {
-    return box;
+Layout* Widget::get_layout() {
+    return layout;
 }
 
 Widget* Widget::get_parent() {
@@ -144,9 +143,9 @@ bool Widget::on_event_start(Event* e) {
         return true;
     }
 
-    if (box) {
-        for (int i = 0; i < box->children.size(); ++i) {
-            if (Widget* child = box->children[i]->get_widget()) {
+    if (layout) {
+        for (int i = 0; i < layout->children.size(); ++i) {
+            if (Widget* child = layout->children[i]->get_widget()) {
                 if (child->on_event_start(e)) {
                     return true;
                 }
@@ -180,7 +179,7 @@ bool Widget::on_draw_event(DrawEvent* e) {
         // to happen once for a redraw of a particular view tree
         // whether it is a subtree or not
         if (e->get_sender() == this) {
-            box->run_context();
+            layout->run_context();
         }
         
         // drill down the view tree, move the planes into position
@@ -222,9 +221,9 @@ bool Widget::on_keyboard_event(KeyboardEvent* e) {
 }
 
 bool Widget::on_resize_event(Event* e) {
-    if (get_layout()->layout_item) {
-        get_layout()->layout_item->run_context();
-        get_layout()->update_box();
+    if (layout->layout_item) {
+        layout->layout_item->run_context();
+        layout->update_box();
     }
     return true;
 }
@@ -264,8 +263,8 @@ bool Widget::is_focused() {
 }
 
 void Widget::set_geometry(const Rect& rect) {
-    if (box) {
-        box->set_size(rect.rows(), rect.cols());
+    if (layout) {
+        layout->set_size(rect.rows(), rect.cols());
     }
 
     // Even though pre_draw() will resize and move the
@@ -280,7 +279,7 @@ void Widget::set_geometry(const Rect& rect) {
 }
 
 Rect Widget::get_geometry() {
-    return get_layout()->get_rect();
+    return layout->get_rect();
 }
 
 bool Widget::is_top_level() const {
@@ -359,13 +358,13 @@ ncplane_options& Widget::default_options() {
 }
 
 void Widget::draw_children() {
-    if (box) {
-        for (BoxItem* item : box->get_children()) {
+    if (layout) {
+        for (LayoutItem* item : layout->get_children()) {
             if (Widget* w = item->get_widget(); w) {
                 w->draw(w->get_plane());
                 // w->dirty = false;
             }
-            else if (Box* b = item->get_layout(); b){
+            else if (Layout* b = item->get_layout(); b){
                 // TODO: draw any widgets inside of a layout that does not
                 // have its own widget
             }

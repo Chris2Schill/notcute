@@ -16,7 +16,6 @@ using signal = boost::signals2::signal<T>;
 template<typename T>
 using slot = boost::signals2::slot<T>;
 
-class Layout;
 class Event;
 class DrawEvent;
 class KeyboardEvent;
@@ -37,12 +36,24 @@ void fill(ncpp::Plane* plane, const std::string& c);
 // widgest frame
 void draw_coords(Widget* w);
 
+// Main Widget base class.
+// At the moment it is vital to pass the correct parent to the widget
+// at construction. Adding the widget to anothers layout will also set
+// the parent accordingly, but strange things can happen with incorrect
+// ordering of their ncpp::Planes. By strange I mean a widget's plane
+// can accidentally cover the showing widgets plane, either for a single frame,
+// or indefinitly depending on the application code. Or it can potentially screw up
+// the final color channel for a particular cell in the rasterization.
+// I wish to address this in the future, 
+// for now, the intended usage is that top_level widgets that you wish to call show()
+// on don't get a parent, but all child widgets will be constructed with the parent
+// through its constructor.
 class Widget : public Object {
 public:
     Widget(Widget* parent = nullptr);
     ~Widget() {
         log_debug(fmt::format("deleting {} widget", get_name()));
-        delete box;
+        delete layout;
 
         log_debug(fmt::format("deleting {}s ncplane", get_name()));
         delete plane;
@@ -59,7 +70,7 @@ public:
     void done_showing();
 
     // Sets the layout of the widget.
-    virtual void set_layout(Box* layout);
+    virtual void set_layout(Layout* layout);
 
     // Note for pre_draw and draw()
     // For all internal uses, the widgets own plane is passed as
@@ -94,7 +105,7 @@ public:
 
     // Returns the widget's layout if one exists and
     // nullptr otherwise
-    Box* get_layout();
+    Layout* get_layout();
 
     // Gets the parent widget, will be nullptr for a top_level
     // widget
@@ -201,7 +212,7 @@ protected:
 
 
 private:
-    Box*         box = nullptr;
+    Layout*      layout = nullptr;
     Widget*      parent = nullptr;
     bool         is_showing = false; //not to be confused with a visible widget
     FocusPolicy  focus_policy = FocusPolicy::NO_FOCUS;

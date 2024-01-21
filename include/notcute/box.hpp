@@ -1,164 +1,19 @@
 #pragma once
 
 #include <vector>
-#include <sstream>
-#include "layout.h"
 #include "rect.hpp"
 #include "layout.hpp"
+#include "lay_item.hpp"
+#include "layout_item.hpp"
 
 namespace notcute {
 
 class Widget;
 class Box;
+class Spacer;
 
-class BoxItem {
+class Box : public LayoutItem {
 public:
-    virtual ~BoxItem() = default;
-
-    virtual Widget* get_widget() {
-        return nullptr;
-    }
-
-    virtual Box* get_layout() { return nullptr; }
-
-    virtual void release_ownership() {}
-};
-
-
-class WidgetItem : public BoxItem {
-public:
-    WidgetItem(Widget* w) : wid(w) {}
-    ~WidgetItem();
-
-    virtual Widget* get_widget() override {
-        return wid;
-    }
-
-    void release_ownership() override;
-
-    Box* get_layout() override ;
-
-private:
-    Widget* wid;
-};
-
-class Lay_Item {
-public:
-    Lay_Item(int rows, int cols) {
-        ctx =  new lay_context;
-        lay_init_context(ctx);
-        lay_reserve_items_capacity(ctx, 1024);
-        id = lay_item(ctx);
-        set_size(rows, cols);
-        log_debug(fmt::format("LAY_ITEM created top level lay_item: id = {}", id));
-    }
-    Lay_Item(Lay_Item& parent) {
-        ctx = parent.ctx;
-        id = lay_item(ctx);
-        log_debug(fmt::format("LAY_ITEM created sub level lay_item: id = {}", id));
-    }
-
-    ~Lay_Item() {
-        // 0 id means its the root of the view tree
-        log_debug(fmt::format("LAY_ITEM deleting lay_item: id = {}", id));
-        if (id == 0) {
-            log_debug(fmt::format("LAY_ITEM destroyed context: id = {}", id));
-            lay_destroy_context(ctx);
-            delete ctx;
-        }
-    }
-
-    // Wrapper functions to the c interface
-    void set_size(int rows, int cols) { lay_set_size_xy(ctx, id, cols, rows); }
-    void set_contain(int flags) { lay_set_contain(ctx, id, flags); }
-    void set_behave(int flags) { lay_set_behave(ctx, id, flags); }
-    void insert(Lay_Item* item)
-    {
-        lay_insert(ctx, id, item->id);
-    }
-    void set_margins_ltrb(lay_scalar left, lay_scalar top, lay_scalar right, lay_scalar bottom) { lay_set_margins_ltrb(ctx,id,left, top, right, bottom); }
-    void get_margins_ltrb(lay_scalar* left, lay_scalar* top, lay_scalar* right, lay_scalar* bottom) { lay_get_margins_ltrb(ctx,id,left,top,right, bottom); }
-    void run_context() { lay_run_context(ctx); }
-    void reset_context() { lay_reset_context(ctx); }
-    void run_item() { lay_run_item(ctx, id); }
-    lay_context* get_context() { return ctx; }
-    lay_vec4 get_rect() { return lay_get_rect(ctx, id); }
-    std::function<void(Lay_Item*)> resize_callback;
-
-private:
-    lay_id       id = {};
-    lay_context* ctx = nullptr;
-};
-
-class Box : public BoxItem {
-public:
-
-    Box(int rows, int cols, Widget* parent = nullptr);
-    Box(Widget* parent = nullptr) : Box(1,1, parent) {}
-    ~Box();
-
-    void set_size(int rows, int cols) {
-        rect.set_height(rows);
-        rect.set_width(cols);
-
-        if (layout_item) {
-            layout_item->set_size(rows, cols);
-        }
-    }
-
-    Widget* get_widget() override { return get_parent_widget(); }
-
-    void set_contain(int flags) {
-        contain_flags = flags;
-        if (layout_item) {
-            layout_item->set_contain(flags);
-        }
-        else {
-            log_debug("lay_item failed to set contain: layout_item is null");
-        }
-    }
-
-    void set_behave(int flags) {
-        behave_flags = flags;
-        if (layout_item) {
-            layout_item->set_behave(flags);
-        }
-        else {
-            log_debug("lay_item failed to set contain: layout_item is null");
-        }
-    }
-
-    void add_widgets(std::vector<notcute::Widget*> ws) {
-        for (auto& w : ws) {
-            add_widget(w);
-        }
-    }
-
-    // void insert(Box* box) {
-    //     if (layout_item) {
-    //         layout_item->insert(box->layout_item);
-    //     }
-    //     else {
-    //         log_debug("lay_item failed to insert: layout_item is null");
-    //     }
-    //     
-    //     // lay_item_t *pchild = lay_get_item(ctx, id);
-    //     // LAY_ASSERT(!(pchild->flags & LAY_ITEM_INSERTED));
-    //     // id = lay_item(ctx);
-    //     // lay_insert(ctx, id, box->id);
-    // }
-
-    // lay_context* get_top_level_ctx();
-    // static lay_context* get_top_level_ctx(Widget* w);
-
-    bool is_top_most_enabled();
-
-    void run_context();
-
-    // void set_lay_context(lay_context* context) {
-    //     ctx = context; 
-    //     id = lay_item(ctx);
-    // }
     struct Margins {
         int left;
         int top;
@@ -166,79 +21,71 @@ public:
         int bottom;
     };
 
-    Margins margins = {};
+    Box(int rows, int cols, Widget* parent = nullptr);
+    Box(Widget* parent = nullptr) : Box(1,1, parent) {}
+    ~Box();
 
-    void set_margins_ltrb(int left, int top, int right, int bottom) {
-        margins = {
-            .left = left,
-            .top = top,
-            .right = right,
-            .bottom = bottom,
-        };
-
-        if (layout_item) {
-            layout_item->set_margins_ltrb(left, top, right, bottom);
-        }
-        else {
-            log_debug("Failed to set margins: layout_item is null");
-        }
-    }
-
-    void get_margins_ltrb(int* left, int* top, int* right, int* bottom) {
-        if (layout_item) {
-            lay_scalar l, t, r, b;
-            layout_item->get_margins_ltrb(&l, &t, &r, &b);
-            *left = l;
-            *top = t;
-            *right = r;
-            *bottom = b;
-        }
-        else {
-            log_debug("Failed to get margins: layout_item is null");
-        }
-    }
-
-    Widget* get_parent_widget() { return parent_widget; }
-    void    set_parent_widget(Widget* pw) { parent_widget = pw; }
-
-    const std::vector<BoxItem*>& get_children() const {
-        return children;
-    }
-
+    // Add widget(s) to the layout. The layout will then
+    // own the widget. Any widgets owned by the layout will be
+    // deleted when the Layout is deleted.
     void add_widget(Widget* widget);
+    void add_widgets(std::vector<notcute::Widget*> wids);
 
-    virtual void post_run_context() {
-        if (layout_item) {
-            lay_vec4 dim = layout_item->get_rect();
-            rect.set_left(dim[0]);
-            rect.set_top(dim[1]);
-            rect.set_width(dim[2]);
-            rect.set_height(dim[3]);
-        }
+    // Release ownership of 'w' and removes it from
+    // the layout.
+    // Returns the widget that was released or null if
+    // w as not owned by 'this' or was null.
+    Widget* take(Widget* w);
 
-        for (BoxItem* child : children) {
-            if (Box* b = child->get_layout(); b) {
-                b->post_run_context();
-            }
-        }
-    }
+    // Convenience function to add a spacer widget to the layouts children.
+    // Use spacers to force elements in a particular direction if they don't happen
+    // to fully fill their parent layout's geometry.
+    Spacer* add_spacer();
 
-    Rect get_rect() {
-        //TODO: this could probably be optimized after a resize
-        // if (layout_item) {
-        //     layout_item->run_context();
-        //     lay_vec4 dim = layout_item->get_rect();
-        //     rect.set_left(dim[0]);
-        //     rect.set_top(dim[1]);
-        //     rect.set_width(dim[2]-dim[0]);
-        //     rect.set_height(dim[3]-dim[1]);
-        // }
-        return rect;
-    }
+    // Sets how the layout will organize its elements.
+    // LAY_ROW = horizontally
+    // LAY_COLUMN = vertically
+    // LAY_LAYOUT = free layout
+    // LAY_FLEX = lay items in a row until width of layout and then start on the next row
+    void set_contain(int flags);
+    uint32_t get_contain() const { return contain_flags; }
 
-    void invalidate(bool send_resize = true);
+    // Sets how the layout will behave in the context of its parent layout.
+    // LAY_CENTER, LAY_VCENTER, LAY_HCENTER,
+    // LAY_LEFT, LAY_RIGHT
+    // LAY_LAYOUT = free layout
+    void set_behave(int flags);
+    uint32_t get_behave() const { return behave_flags; }
 
+    void set_size(int rows, int cols);
+    void set_width(int cols);
+    void set_height(int rows);
+    Rect get_rect();
+
+    Widget* get_widget() override;
+
+    void set_margins_ltrb(int left, int top, int right, int bottom);
+    void get_margins_ltrb(int* left, int* top, int* right, int* bottom);
+
+    const std::vector<LayoutItem*>& get_children() const;
+
+    // Will run the Lay_Item context, i.e. calculating the positions and sizes
+    // of all the children. Will calculate for entire view tree no matter
+    // which node this is called on
+    void run_context();
+
+    // Reflect the changes in the box model to the local layout geometry.
+    // Note: I've allowed two "sources of truth" when it comes to position and sizes in the
+    // box model. It allows client code to be a bit lazier when it comes to defining its
+    // positions, layouts, etc, not having to define everything in a specific order
+    virtual void post_run_context();
+
+    // Used to tell if a LayoutItem is a Layout or not.
     Box* get_layout() override { return this; }
+
+    // Creates a Lay_Item for this layout. The created Lay_Item
+    // will be a child of 'parent's Lay_Item
+    void create_layout_item(Box* parent);
 
     // Will recreate the layout subtree and insert
     // it into the 'parent' view tree
@@ -250,53 +97,45 @@ public:
     // take/add_widget functions call these appropriately
     void destroy_layout_item_subtree();
 
+    void insert_subtree_node(Box* node);
     void remove_subtree_node(Box* node);
 
-    void insert_subtree_node(Box* node);
+    // Called when the underlying lay_item view tree is
+    // modified. Should update the layouts stored geometry
+    // according to the latest box model updates
+    void invalidate(bool send_resize = true);
 
-
-    void create_layout_item(Box* parent);
-
-    // Release ownership of 'w'. Returns 
-    // the widget that was release or null if
-    // w as not owned by 'this' or was null.
-    Widget* take(Widget* w);
-
-    friend class Widget;
+    // Rebuilds the Lay_Item viewtree. Will rebuild the entire tree
+    // starting from the top_level layout. This is due to a current
+    // limitation of the Lay_Item box model.
     void rebuild_layout();
 
-    void set_enabled(bool e) { enabled = e; } // TODO: prob some resizing events
-    bool is_enabled() const { return enabled; } 
-
+    // Returns the parent layout if it exists and nullptr otherwise.
     Box* get_parent_layout();
 
-    int get_behave() const { return behave_flags; }
-    int get_contain() const { return contain_flags; }
-
+    // Prints Debug information
     void print_view_tree_dimensions(int depth = 0);
-    
 
-protected:
+    friend class Widget;
 
+
+private:
     // Will rebuild the entire lay_context no matter which node we call it from
     void rebuild_layout_recursive_helper();
 
-private:
+    // Used internally, from application code point of view, you
+    // set the layout of a widget not the widget of a layout
+    void set_widget(Widget* pw) { its_widget = pw; }
+
     void update_box();
-    void update_box_flags() {
-        layout_item->set_contain(contain_flags);
-        layout_item->set_behave(behave_flags);
-    }
 
-    std::vector<BoxItem*> children;
-    Rect         rect = {};
-    int          contain_flags = 0;
-    int          behave_flags = 0;
-    Lay_Item*    layout_item = nullptr;
-    Widget*      parent_widget = nullptr;
-    bool         dirty = false;
-    bool         enabled = false;
-
+    std::vector<LayoutItem*> children;
+    Rect                  rect = {};
+    Margins               margins = {};
+    uint32_t              contain_flags = 0;
+    uint32_t              behave_flags = 0;
+    Lay_Item*             layout_item = nullptr;
+    Widget*               its_widget = nullptr;
 };
 
 class VBoxLayout : public Box {
@@ -331,5 +170,13 @@ public:
     {
     }
 };
+
+// For now all the only Layout type is BoxLayout
+// but in the future we could refactor to make a
+// generic Layout and have Box subclass Layout
+// to be able to provide other types of Layouts..
+// in theory. Might be tricky with how Notcurses is based
+// on 2D planes but I think its possible.
+using Layout = Box;
 
 }
