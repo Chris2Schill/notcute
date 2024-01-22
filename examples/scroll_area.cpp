@@ -26,7 +26,6 @@ int main() {
     // contains a few FrameWidgets that each have their own ListWidget
     Widget* content = new Widget(sq);
     content->set_layout(new VBoxLayout(75,100));
-    sq->set_content(content);
     for (int i = 0; i < 3; ++i) {
         auto frame = new FrameWidget(content);
         frame->set_layout(new VBoxLayout(20,20));
@@ -43,6 +42,9 @@ int main() {
         content->get_layout()->add_widget(frame);
     }
 
+    // Set the content of the scroll area and add it to the main window.
+    // The content can by any widget.
+    sq->set_content(content);
     mw.get_layout()->add_widget(sq);
 
     // Scroll area comes with basic controls for scrolling the content.
