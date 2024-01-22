@@ -26,20 +26,22 @@ public:
             case NCKEY_DOWN:
             case NCKEY_LEFT:
             case NCKEY_RIGHT:
-            case NCKEY_ESC:
                 break;
             case NCKEY_ENTER:
                 entry_submitted(buffer);
+                redraw();
                 return true;
             case NCKEY_BACKSPACE:
                 if (!buffer.empty()) {
                     buffer.pop_back();
                 }
+                redraw();
                 return true;
             default:
                 if (buffer.size() < get_geometry().width()) {
                     buffer.push_back((char)e->get_key());
                 }
+                redraw();
                 return true;
         }
         return false;
