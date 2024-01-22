@@ -1,5 +1,6 @@
 #include "notcute/glyphs.hpp"
 #include "notcute/logger.hpp"
+#include <notcurses/notcurses.h>
 #include <notcute/scroll_area.hpp>
 
 #include <notcute/text_widget.hpp>
@@ -89,7 +90,8 @@ void ScrollArea::set_content(Widget* w) {
     // of the scroll area seems to act as a "window" to the content
     // thats "behind" it. The content plane is not actually moved
     // around behind the scrollarea plane as we scroll.
-    content->get_plane()->move_bottom();
+    ncplane* np = content->get_plane()->to_ncplane();
+    ncplane_move_family_bottom(np);
 
     redraw();
 }

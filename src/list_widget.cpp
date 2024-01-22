@@ -155,6 +155,7 @@ void ListWidget::resize_content() {
 }
 
 void ListWidget::adjust_size_to_contents() {
+    if (!content) { return; }
     // Start with the size of the scroll area window
     Rect rect = get_geometry();
     int width = rect.width();
@@ -173,7 +174,7 @@ void ListWidget::adjust_size_to_contents() {
 
     Rect r = {};
     r.set_width(width);
-    r.set_height(width);
+    r.set_height(height);
     content->set_geometry(r);
 
     // Run a predraw here to ensure that the backing layout

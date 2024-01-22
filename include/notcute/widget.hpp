@@ -4,6 +4,7 @@
 #include <notcurses/notcurses.h>
 #include "object.hpp"
 #include "layout.hpp"
+#include "event_loop.hpp"
 #include "rect.hpp"
 #include "colors.hpp"
 
@@ -15,11 +16,6 @@ using signal = boost::signals2::signal<T>;
 
 template<typename T>
 using slot = boost::signals2::slot<T>;
-
-class Event;
-class DrawEvent;
-class KeyboardEvent;
-class ResizeEvent;
 
 enum class FocusPolicy {
     FOCUS,

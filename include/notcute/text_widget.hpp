@@ -16,7 +16,7 @@ public:
     {
         set_layout(new VBoxLayout);
         get_layout()->set_contain(LAY_ROW);
-        get_layout()->set_behave(LAY_CENTER | LAY_FILL);
+        get_layout()->set_behave(LAY_CENTER | LAY_HFILL);
         set_text(text);
     }
 
@@ -79,5 +79,7 @@ private:
     std::string text;
     uint32_t align = LAY_CENTER;
 };
+
+using Label = TextWidget;
 
 }

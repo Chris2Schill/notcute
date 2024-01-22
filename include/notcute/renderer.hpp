@@ -7,6 +7,8 @@
 
 namespace notcute {
 
+int resize_cb(ncplane* p);
+
 struct Renderer {
     static ncplane_options* default_pile_options() {
         auto& nc = ncpp::NotCurses::get_instance();
@@ -21,6 +23,7 @@ struct Renderer {
 
         return &opts;
     }
+
 
     void show(Widget* widget) {
         create_pile_for_widget(widget);
@@ -47,6 +50,7 @@ struct Renderer {
         auto iter = piles.find(w);
         if (iter == piles.end()) {
             auto pile = new ncpp::Pile(default_pile_options(), &nc);
+            pile->set_resizecb(&resize_cb);
             piles[w] = pile;
         }
         return piles[w];
@@ -61,10 +65,33 @@ struct Renderer {
 
     ncpp::NotCurses* get_nc() { return &nc; }
 
+    void resize_all_piles() {
+        log_debug("RENDERER REDRAW ALL PILES");
+        Size term_size = get_term_size();
+        for (auto& [wid, pile] : piles) {
+            Rect r = wid->get_geometry();
+            r.set_width(term_size.width);
+            r.set_height(term_size.height);
+            wid->set_geometry(r);
+            wid->get_layout()->rebuild_layout();
+            // wid->get_plane()->resize(pile->get_dim_y(), pile->get_dim_x());
+            // wid->get_plane()->resize_realign();
+            wid->redraw();
+            log_debug(fmt::format("RENDERER: h,w=({},{})", term_size.height, term_size.width));
+        }
+    }
+
 private:
     static Renderer* instance;
     std::unordered_map<Widget*, ncpp::Pile*> piles;
     ncpp::NotCurses nc;
 };
+
+inline int resize_cb(ncplane* p) {
+    Renderer* renderer = Renderer::get_instance();
+    // log_debug(fmt::format("RENDERER: resize_cb h,w=({},{})", ncplane_dim_y(p), ncplane_dim_x(p)));
+    renderer->resize_all_piles();
+    return 0;
+}
 
 }
