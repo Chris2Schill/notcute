@@ -5,6 +5,19 @@
 #include "logger.hpp"
 #include <algorithm>
 
+inline std::vector<std::string> tokenize(const std::string& str, char delim)
+{
+    std::vector<std::string> tokens;
+    std::stringstream ss(str);
+    std::string token;
+    while (getline(ss, token, delim))
+    {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
+
+
 namespace notcute {
 
 class TextWidget : public Widget {
@@ -22,23 +35,62 @@ public:
 
     void draw(ncpp::Plane* plane) override {
 
+        plane->set_channels(notcute::channels_from_fgbg(fg,bg));
+
         int cols = plane->get_dim_x();
 
-        int x = 0;
-        if (align == LAY_LEFT) {
-            x = 0;
-        }
-        else if (align == LAY_CENTER) {
-            x = cols/2 - text.size()/2;
-        }
-        else if (align == LAY_RIGHT) {
-            x = cols - text.size();
-        }
 
-        plane->set_channels(notcute::channels_from_fgbg(fg,bg));
-        plane->putstr(0,x, text.c_str());
-        log_debug(fmt::format("textwidget draw({}) plane_dim_yx({},{}) align={}, x={}",
-                    text, plane->get_dim_y(), plane->get_dim_x(), align, x));
+        //TODO: textboxify (better multiline support)
+        // if (lines.size() == 1) {
+            int x = 0;
+            if (align == LAY_LEFT) {
+                x = 0;
+            }
+            else if (align == LAY_CENTER) {
+                x = cols/2 - text.size()/2;
+            }
+            else if (align == LAY_RIGHT) {
+                x = cols - text.size();
+            }
+            plane->putstr(0,x, text.c_str());
+            log_debug(fmt::format("textwidget draw({}) plane_dim_yx({},{}) align={}, x={}",
+                        text, plane->get_dim_y(), plane->get_dim_x(), align, x));
+        // }
+        // else {
+        //
+        //     int y = 0;
+        //     int x = 0;
+        //     for (const auto& line : lines) {
+        //         int prevy = y;
+        //         x = 0;
+        //
+        //         if (line.size()-1 > cols) {
+        //             set_scrolling(true);
+        //             plane->putstr(y,x, " ");
+        //             y += line.size() / cols;
+        //             continue;
+        //         }
+        //
+        //         auto words = tokenize(line, ' ');
+        //         for (const auto& word: words) {
+        //             if (word.empty()) { continue; }
+        //
+        //             if (x + word.size() > cols) {
+        //                 y++;
+        //                 x = 0;
+        //             }
+        //
+        //             plane->putstr(y,x, word.c_str());
+        //             x += word.size();
+        //             plane->putstr(y,x, " ");
+        //             x++;
+        //
+        //             if (prevy == y) { y++; }
+        //         }
+        //
+        //     }
+        //
+        // }
     }
 
     void set_scrolling(bool scroll) {
@@ -54,16 +106,43 @@ public:
     void set_text(const std::string& t) {
         text = t;
         int lines = std::ranges::count(t, '\n')+1;
+        // lines = tokenize(text, '\n');
+        //
+        // std::vector<std::string> tokens;
+        //
+        // int width = 0;
+        // words.clear();
+        // for (const auto& line : lines) {
+        //     width = std::max(width, (int)line.size());
+        //
+        //
+        //     // std::stringstream ss(line);
+        //     // std::string token;
+        //     // while (getline(ss, token))
+        //     // {
+        //     //     tokens.push_back(token);
+        //     // }
+        //
+        //     for (const auto& word : tokenize(line, ' ')) {
+        //         words.push_back(word);
+        //     }
+        // }
+
+        int xtra = 1;//lines > 1 ? 1 : 0;
 
         Rect r = get_geometry();
-        r.set_width(text.size()/lines+1);
+        // r.set_width(width+xtra);
+        r.set_width(text.size()/lines+xtra);
         r.set_height(lines);
         // r.set_width(text.size());
         // r.set_height(1);
         set_geometry(r);
         redraw();
         log_debug(fmt::format("textwidget set_text({}) resized({},{})", text, r.rows(), r.cols()));
+
     }
+
+    const std::string& get_text() const { return text; }
 
     std::string to_string() const override {
         return text;
@@ -77,6 +156,8 @@ private:
     Color bg = {000,000,000,NCALPHA_TRANSPARENT};
 
     std::string text;
+    std::vector<std::string> lines;
+    std::vector<std::string> words;
     uint32_t align = LAY_CENTER;
 };
 
