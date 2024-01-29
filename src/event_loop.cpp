@@ -11,6 +11,11 @@ void EventLoop::process_events() {
 
         // If the event has a sender, deliver it directly to it
         // This is used for view subtree updating
+
+        if (event->get_receiver()) {
+            event->get_receiver()->on_event(event);
+        }
+
         else if (event->get_sender()) {
             switch(event->get_type()) {
                 case Event::DELETE_LATER:
@@ -23,10 +28,15 @@ void EventLoop::process_events() {
 
         // Certain events have no sender but go directly to the
         // "focused" widget
-        else if(event->get_type() == Event::KEYBOARD_EVENT ||
-                event->get_type() == Event::MOUSE_EVENT) {
-            if (Widget::get_focused_widget()) {
-                Widget::get_focused_widget()->on_event(event);
+        else if(event->get_type() == Event::KEYBOARD_EVENT &&
+                Widget::get_focused_widget()) {
+            Widget::get_focused_widget()->on_event(event);
+        }
+        else if ( event->get_type() == Event::MOUSE_EVENT) {
+            MouseEvent* me = static_cast<MouseEvent*>(event);
+            Widget::set_mouse_position(me->get_mouse_pos());
+            if (Widget* wid = Widget::get_widget_under_mouse(); wid) {
+                wid->on_event(event);
             }
         }
         else {

@@ -21,6 +21,8 @@ enum class FocusPolicy {
     FOCUS,
     NO_FOCUS
 };
+struct FocusNode;
+class FocusStack;
 
 // Fills all cells in a plane with cell c
 void fill(ncpp::Plane* plane, const ncpp::Cell& c);
@@ -33,17 +35,10 @@ void fill(ncpp::Plane* plane, const std::string& c);
 void draw_coords(Widget* w);
 
 // Main Widget base class.
-// At the moment it is vital to pass the correct parent to the widget
-// at construction. Adding the widget to anothers layout will also set
-// the parent accordingly, but strange things can happen with incorrect
-// ordering of their ncpp::Planes. By strange I mean a widget's plane
-// can accidentally cover the showing widgets plane, either for a single frame,
-// or indefinitly depending on the application code. Or it can potentially screw up
-// the final color channel for a particular cell in the rasterization.
-// I wish to address this in the future, 
-// for now, the intended usage is that top_level widgets that you wish to call show()
-// on don't get a parent, but all child widgets will be constructed with the parent
-// through its constructor.
+// Top Level widgets that you wish to call show()
+// on should not be given a parent. Child widgets that are going to 
+// be added to layouts can specify their parnet on construction or defer
+// that until add_widget is called.
 class Widget : public Object {
 public:
     Widget(Widget* parent = nullptr);
@@ -53,6 +48,10 @@ public:
 
         log_debug(fmt::format("deleting {}s ncplane", get_name()));
         delete plane;
+
+        delete_focus_graph();
+
+        alive_widgets--;
     }
 
     // Starts a render/event loop for this widget.
@@ -86,6 +85,8 @@ public:
     // for some fancyschmance drawing
     virtual void draw(ncpp::Plane* plane);
 
+    virtual void post_draw(ncpp::Plane* plane);
+
     // Schedules a redraw event for this widget that will
     // happen in the next pump of the eventloop  
     virtual void redraw();
@@ -114,11 +115,13 @@ public:
     void reparent(Widget* new_parent);
 
     // Event handling
-    bool on_event_start(Event* e);
     virtual bool on_event(Event* e);
     virtual bool on_draw_event(DrawEvent* e);
     virtual bool on_keyboard_event(KeyboardEvent* e);
+    virtual bool on_mouse_event(MouseEvent* e);
     virtual bool on_resize_event(Event* e);
+    virtual bool on_focus_in_event(FocusEvent* e)  { return false; }
+    virtual bool on_focus_out_event(FocusEvent* e) { return false; }
 
     // Virtual getter for a string representation of a widget
     virtual std::string to_string() const;
@@ -177,6 +180,15 @@ public:
     void set_fg_color(Color c);
     void set_bg_color(Color c);
 
+
+    Widget* get_deepest_widget_under_mouse();
+
+    // Absolute coords to local coords
+    Point map_to_local(Point pos) const;
+
+    // Local coords to global coords
+    Point map_to_global(Point pos) const;
+
     // Currently theres no internal usage of a widgets name
     // other than for debugging
     void set_name(const std::string& name);
@@ -187,34 +199,98 @@ public:
     // exposure of the Notcurses api.
     void debug_set_plane_color(int r, int g, int b);
 
-    // Signals
-    signal<void(bool)> focus_state_changed;
-
     // Only one widget can have focus at a time, i.e
     // the "focused_widget". Focus heirarchies that
     // provide control flow between widgets can be done
     // using the FocusStack with one or more FocusNode graphs
     static Widget*& get_focused_widget();
 
+    // Returns the widget under the mouse, if any
+    static Widget* get_widget_under_mouse();
+
     static ncplane_options& default_options();
 
+    bool is_under_mouse();
+
+    void set_mouse_events_enabled(bool enabled);
+
+    virtual void on_hover_enter() {
+        log_debug(get_name() + " hover enter");
+        if (get_attribute(ATTR_FOCUS_ON_HOVER)) {
+            set_focus_policy(FocusPolicy::FOCUS);
+            set_focus();
+        }
+
+        redraw();
+    }
+    virtual void on_hover_leave() {
+        log_debug(get_name() + " hover leave");
+        redraw();
+    }
+
+    enum Attribute {
+        ATTR_FOCUS_ON_SHOW,
+        ATTR_FOCUS_ON_HOVER,
+        ATTR_MOUSE_EVENTS_ENABLED,
+        COUNT,
+    };
+
+    bool attributes[Attribute::COUNT] = {false, false, false};
+
+    bool get_attribute(Attribute e) {
+        return attributes[e];
+    }
+    void set_attribute(Attribute e, bool b) {
+        attributes[e] = b;
+    }
+
+    // TODO: move to input system
+    static void set_mouse_position(Point pos);
+    static Point get_mouse_position();
+
+    Widget* focus_next_in_chain();
+    Widget* focus_prev_in_chain();
+    void delete_focus_graph();
+    void set_tab_order(Widget* wid, Widget* next);
+    Widget* next_in_focus_chain();
+    Widget* prev_in_focus_chain();
+    void use_focus_stack();
+    FocusStack* get_next_parent_focus_stack();
+
+    // Signals
+    signal<void(bool)> focus_changed;
+
+    static int alive_widgets;
 protected:
+
+    friend class EventLoop;
 
     // Draws the widgts children. Used in draw()
     // to recursively draw the view tree
     void draw_children();
+    // bool focus_idx_is_valid(int idx);
+    void set_dirty();
+    FocusStack* get_focus_stack();
 
     ncpp::Plane* plane = nullptr;
-
+    Widget*      parent = nullptr;
 
 private:
     Layout*      layout = nullptr;
-    Widget*      parent = nullptr;
     bool         is_showing = false; //not to be confused with a visible widget
     FocusPolicy  focus_policy = FocusPolicy::NO_FOCUS;
     bool         dirty = false;
+    int          focused_child_idx = -1;
+    FocusNode*   focus_graph = nullptr;
+    FocusNode*   curr_focus_node = nullptr;
+
+    FocusStack*  focus_stack = nullptr;
+
     static std::unordered_map<ncpp::Plane*, std::string> plane_name_map;
     static Widget* focused_widget;
+    static Point mouse_position;
+
+    bool is_hovered = false;
 };
 
 inline void fill(ncpp::Plane* plane, const ncpp::Cell& c) {

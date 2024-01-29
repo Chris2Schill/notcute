@@ -2,11 +2,14 @@
 
 namespace notcute {
 
+ListWidget::Defaults ListWidget::defaults;
+
 ListWidget::ListWidget(Widget* parent)
     :ScrollArea(nullptr, parent)
 {
     set_layout(new VBoxLayout);
     set_focus_policy(FocusPolicy::FOCUS);
+    set_mouse_events_enabled(true);
 
     Widget* list_content = new Widget(this);
     list_content->set_layout(new VBoxLayout);
@@ -43,6 +46,7 @@ void ListWidget::clear() {
 }
 
 void ListWidget::next_item() {
+    log_debug("listwidget nextitem");
     if (selected_idx < items.size()-1) {
         selected_idx++;
         notcute::log_debug("listwidget nextitem");
@@ -54,6 +58,7 @@ void ListWidget::next_item() {
 }
 
 void ListWidget::prev_item() {
+    log_debug("listwidget previtem");
     if (selected_idx != 0) {
         selected_idx--;
         if (selected_idx < content_subwindow.y) {
@@ -138,6 +143,24 @@ bool ListWidget::on_keyboard_event(KeyboardEvent* e) {
     }
 }
 
+bool ListWidget::on_mouse_event(MouseEvent* e) {
+    switch(e->get_button()) {
+        case NCKEY_BUTTON1:
+            if (e->get_evtype() == NCTYPE_PRESS) {
+                clicked();
+                return true;
+            }
+            break;
+    }
+    return ScrollArea::on_mouse_event(e);
+}
+
+void ListWidget::on_hover_enter() {
+}
+
+void ListWidget::on_hover_leave() {
+}
+
 const std::vector<ListItem*>& ListWidget::get_items() {
     return items;
 }
@@ -194,6 +217,22 @@ void ListWidget::delete_items() {
         delete item;
     }
     items.clear();
+}
+
+void ListWidget::clicked() {
+    Point pos = Widget::get_mouse_position();
+    pos = map_to_local(pos);
+
+    int top_margin, _;
+    content->get_layout()->get_margins_ltrb(&_, &top_margin, &_, &_);
+    auto tmp = selected_idx;
+    selected_idx = pos.y - 1 + content_subwindow.y;
+    if (is_selected_idx_valid()) {
+        redraw();
+    }
+    else {
+        selected_idx = tmp;
+    }
 }
 
 }

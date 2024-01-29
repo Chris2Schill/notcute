@@ -11,7 +11,7 @@ namespace notcute {
 class ScrollArea : public FrameWidget {
 public:
     ScrollArea(Widget* content, Widget* parent = nullptr);
-    ~ScrollArea() = default;
+    ~ScrollArea();
 
     void draw(ncpp::Plane* p) override;
 
@@ -46,6 +46,7 @@ public:
     void scroll_horizontally(int cols = 1);
     
     bool on_keyboard_event(KeyboardEvent* e) override;
+    bool on_mouse_event(MouseEvent* e) override;
 
     // Signals
     notcute::signal<void()> scrolled;

@@ -118,7 +118,6 @@ public:
 
     friend class Widget;
 
-
 private:
     // Will rebuild the entire lay_context no matter which node we call it from
     void rebuild_layout_recursive_helper();

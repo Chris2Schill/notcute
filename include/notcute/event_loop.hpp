@@ -3,6 +3,7 @@
 #include <functional>
 #include <cstdint>
 #include <ncpp/NotCurses.hh>
+#include "rect.hpp"
 #include "util.hpp"
 
 namespace notcute {
@@ -18,44 +19,85 @@ public:
         KEYBOARD_EVENT,
         MOUSE_EVENT,
         DELETE_LATER,
+        FOCUS_IN,
+        FOCUS_OUT,
 
         USER_EVENT,
     };
 
-    Event(Widget* sender, EventType t)
+    Event(EventType t, Widget* sender = nullptr, Widget* receiver = nullptr)
         : sender(sender),
+        receiver(receiver),
         type(t) {}
     virtual ~Event() = default;
 
     EventType get_type() const { return type; }
     Widget* get_sender() { return sender; }
+    Widget* get_receiver() { return receiver; }
 
 private:
-    Widget* sender;
+    Widget* sender = nullptr;
+    Widget* receiver = nullptr;
     EventType type;
 };
 
 class DrawEvent : public Event {
 public:
     DrawEvent(Widget* w)
-        :Event(w, EventType::DRAW)
+        :Event(EventType::DRAW, w, w)
     {
     }
 };
 
 class KeyboardEvent : public Event {
 public:
-    KeyboardEvent(Widget* w, const ncinput& ni)
-        :Event(w, EventType::KEYBOARD_EVENT)
+    KeyboardEvent(const ncinput& ni)
+        :Event(EventType::KEYBOARD_EVENT)
         ,ni(ni)
     {
     }
 
     uint32_t get_key() { return ni.id; }
+    ncintype_e get_evtype() { return ni.evtype; }
     const ncinput& get_ncinput() { return ni; }
 
 private:
     ncinput ni = {};
+};
+
+class MouseEvent : public Event {
+public:
+    MouseEvent(const ncinput& ni)
+        :Event(EventType::MOUSE_EVENT)
+        ,ni(ni)
+    {
+    }
+
+    // evtype can by one of
+    // NCTYPE_UNKNOWN,
+    // NCTYPE_PRESS,
+    // NCTYPE_REPEAT,
+    // NCTYPE_RELEASE,
+
+    uint32_t get_button() { return ni.id; }
+    ncintype_e get_evtype() { return ni.evtype; }
+    Point    get_mouse_pos() { return {.x = ni.x, .y = ni.y};}
+    const ncinput& get_ncinput() { return ni; }
+
+private:
+    ncinput ni = {};
+};
+
+class FocusEvent : public Event {
+public:
+    FocusEvent(Event::EventType e, Widget* sender, Widget* receiver)
+        :Event(e, sender, receiver)
+    {
+        assert(e == FOCUS_IN || e == FOCUS_OUT);
+    }
+
+    bool lost_focus() { return get_type() == FOCUS_OUT; }
+    bool has_focus() { return get_type() == FOCUS_IN; }
 };
 
 // class ResizeEvent : public Event {

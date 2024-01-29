@@ -230,7 +230,7 @@ void BoxLayout::invalidate(bool send_resize) {
     }
 
     if (send_resize) {
-        EventLoop::get_instance()->post(new Event(get_widget(), Event::RESIZE));
+        EventLoop::get_instance()->post(new Event(Event::RESIZE, get_widget(), get_widget()));
     }
     get_widget()->redraw();// TODO: needed? or just fix resize
 }
