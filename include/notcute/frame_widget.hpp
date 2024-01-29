@@ -1,5 +1,6 @@
 #pragma once
 
+#include "notcute/colors.hpp"
 #include "widget.hpp"
 #include <notcurses/notcurses.h>
 
@@ -32,32 +33,31 @@ public:
     }
 
     void draw(ncpp::Plane* plane) override {
+        auto chans = plane->get_channels();
+
         draw_border(plane);
         draw_title(plane);
+
+        plane->set_channels(chans);
+
         Widget::draw(plane);
     }
 
     virtual void draw_border(ncpp::Plane* plane) {
-        uint64_t fg = frame_fg.to_channel();
-        uint64_t bg = frame_bg.to_channel();
-        // bg &= NCALPHA_TRANSPARENT;
-        uint64_t channels = (fg<<32) + bg;
+        uint64_t channels = channels_from_fgbg(frame_fg, frame_bg);
+        plane->set_channels(channels);
         plane->perimeter_rounded(0, channels, 0);
     }
 
-    void draw_title(ncpp::Plane* plane) {
-        auto chans = plane->get_channels();
-
+    virtual void draw_title(ncpp::Plane* plane) {
         plane->set_channels(channels_from_fgbg(frame_title_fg, frame_title_bg));
         plane->putstr(0,2,title.c_str());
-
-        plane->set_channels(chans);
     }
 
-    void set_frame_fg(Color c) { frame_fg = c; }
-    void set_frame_bg(Color c) { frame_bg = c; }
-    void set_frame_title_fg(Color c) { frame_title_fg = c; }
-    void set_frame_title_bg(Color c) { frame_title_bg = c; }
+    void set_frame_fg(Color c) { frame_fg = c; redraw(); }
+    void set_frame_bg(Color c) { frame_bg = c; redraw(); }
+    void set_frame_title_fg(Color c) { frame_title_fg = c; redraw(); }
+    void set_frame_title_bg(Color c) { frame_title_bg = c; redraw(); }
 
     Color get_frame_fg() const { return frame_fg; }
     Color get_frame_bg() const { return frame_bg; }

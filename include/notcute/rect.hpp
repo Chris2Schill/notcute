@@ -29,8 +29,8 @@ struct Rect {
 
     int x() const { return m_pos.x; }
     int y() const { return m_pos.y; }
-    int width() const { return m_size.width; }
-    int height() const { return m_size.height; }
+    unsigned width() const { return m_size.width; }
+    unsigned height() const { return m_size.height; }
 
     void set_height(int h) { m_size.height = h; }
     void set_width(int w) { m_size.width = w; }

@@ -17,17 +17,30 @@ public:
         get_top_level_widget()->redraw();
     }
 
-    void move_to_term_center() {
+    void move(Point pos) {
         assert(get_layout() != nullptr);
 
+        // Point p = map_to_local(pos);
+
         Rect rect = get_geometry();
+        rect.set_pos(pos);
+        set_geometry(rect);
+    }
+
+    void move(int y, int x) {
+        move(Point{
+                .x = x,
+                .y = y,
+            });
+    }
+
+    void move_to_term_center() {
+        Rect r = get_geometry();
         Point term_center = Renderer::get_term_center();
-
-        term_center.x -= rect.width()/2;
-        term_center.y -= rect.height()/2;
-
-        rect.set_pos(term_center);
-        set_geometry(Rect{term_center, rect.size()});
+        term_center.x -= r.width()/2;
+        term_center.y -= r.height()/2;
+        move(Point{.x = term_center.x,
+                   .y = term_center.y});
     }
 
     virtual void pre_draw(ncpp::Plane* p) override {
@@ -46,15 +59,6 @@ public:
         Rect rect = get_geometry();
         rect.set_pos(p);
         set_geometry(rect);
-    }
-
-    void draw(ncpp::Plane* p) override {
-        draw_solid_bg(p);
-    }
-
-    void draw_solid_bg(ncpp::Plane* p, uint64_t channels = 0) {
-        notcute::fill(p, " ");
-        p->perimeter_rounded(0,channels,0);
     }
 
 private:
