@@ -29,9 +29,15 @@ inline uint64_t RGB(int r, int g, int b) {
     return c.get_channels();
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+
 inline static notcute::Color WHITE       = {235,235,235,NCALPHA_OPAQUE};
 inline static notcute::Color DARK_YELLOW = {180,120,000,NCALPHA_OPAQUE};
 inline static notcute::Color BLUE        = {000,120,200,NCALPHA_OPAQUE};
 inline static notcute::Color LIGHT_GREEN = {000,120,050,NCALPHA_HIGHCONTRAST};
+inline static notcute::Color GREEN       = {000,120,050,NCALPHA_OPAQUE};
+
+#pragma GCC diagnostic pop
 
 }
