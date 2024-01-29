@@ -21,6 +21,7 @@ int main() {
 
         // Set a title so we can see which is which
         frame->set_title("Frame " + std::to_string(i));
+        frame->set_name("Frame " + std::to_string(i));
     }
 
     mw.show();
