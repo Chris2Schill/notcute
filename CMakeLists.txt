@@ -55,9 +55,14 @@ endmacro()
 build_and_install(layouts)
 build_and_install(list)
 build_and_install(custom_widgets)
-build_and_install(focus_graph)
+build_and_install(focus_chain)
 build_and_install(scroll_area)
 build_and_install(nested_focusables)
+build_and_install(media_player)
+build_and_install(stacked_widget)
+build_and_install(tabs)
+build_and_install(floaters)
+build_and_install(textbox)
 
 
 install(DIRECTORY include/
