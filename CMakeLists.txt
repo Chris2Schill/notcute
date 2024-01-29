@@ -29,6 +29,7 @@ set(SOURCES
     src/frame_widget.cpp
     src/list_widget.cpp
     src/focus_stack.cpp
+    src/visual.cpp
 )
 
 add_library(notcute STATIC ${SOURCES})
