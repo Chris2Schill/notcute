@@ -38,11 +38,11 @@ void ScrollArea::draw(ncpp::Plane* p) {
         return;
     }
 
-    // Not excatly sure if this is the best place for this but..
+    // Not exactly sure if this is the best place for this but..
     // when taking/adding the scroll area from a layout, its possible
     // that the 'content' can end up above the scroll areas visible plane
     // on the z-axis. So force it below (again) here..
-    content->get_plane()->move_bottom();
+    ncplane_move_family_bottom(content->get_plane()->to_ncplane());
 
     // Draws the content area plane. content should be an 
     // "offscreen" widget.
